@@ -2,12 +2,12 @@ use log::debug;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::fs;
 use std::fs::Permissions;
+use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::OnceLock;
-use tokio::fs;
-use tokio::io::AsyncReadExt;
 
 #[cfg(debug_assertions)]
 static PATH: &str = "./proxy.toml";
@@ -35,6 +35,7 @@ pub struct Config {
     pub data_dir: Cow<'static, str>,
     pub log_target: LogTarget,
     pub danger_allow_unsecure: bool,
+    pub workers: usize,
 }
 
 impl Default for Config {
@@ -47,6 +48,7 @@ impl Default for Config {
             data_dir: data_path(),
             log_target: LogTarget::Syslog,
             danger_allow_unsecure: false,
+            workers: 1,
         }
     }
 }
@@ -58,9 +60,9 @@ fn data_path() -> Cow<'static, str> {
 
 impl Config {
     #[inline]
-    pub async fn create_data_dir(&self) -> anyhow::Result<()> {
-        fs::create_dir_all(self.data_dir.as_ref()).await?;
-        fs::set_permissions(self.data_dir.as_ref(), Permissions::from_mode(0o700)).await?;
+    pub fn create_data_dir(&self) -> anyhow::Result<()> {
+        fs::create_dir_all(self.data_dir.as_ref())?;
+        fs::set_permissions(self.data_dir.as_ref(), Permissions::from_mode(0o700))?;
         Ok(())
     }
 
@@ -69,16 +71,16 @@ impl Config {
         CONFIG.get().unwrap()
     }
 
-    pub async fn load() -> anyhow::Result<()> {
-        match Self::read().await {
+    pub fn load() -> anyhow::Result<()> {
+        match Self::read() {
             Ok(slf) => {
-                slf.create_data_dir().await?;
+                slf.create_data_dir()?;
                 CONFIG.set(slf).unwrap();
                 Ok(())
             }
             Err(err) => {
                 eprintln!("{err}");
-                match Self::create_template().await {
+                match Self::create_template() {
                     Ok(_) => Err(anyhow::Error::msg(format!(
                         "Creating template config in {PATH}. Edit it and paste the correct values."
                     ))),
@@ -89,34 +91,34 @@ impl Config {
     }
 
     #[inline]
-    pub async fn create_template() -> anyhow::Result<()> {
-        if fs::try_exists(PATH).await? {
+    pub fn create_template() -> anyhow::Result<()> {
+        if fs::exists(PATH)? {
             debug!("Config file exists already - nothing to do");
             return Ok(());
         }
 
         let path = PathBuf::from(PATH);
         let parent = path.parent().unwrap();
-        fs::create_dir_all(parent).await?;
-        fs::set_permissions(parent, Permissions::from_mode(0o600)).await?;
+        fs::create_dir_all(parent)?;
+        fs::set_permissions(parent, Permissions::from_mode(0o600))?;
 
-        fs::File::create_new(&path).await?;
-        fs::set_permissions(path, Permissions::from_mode(0o600)).await?;
+        fs::File::create_new(&path)?;
+        fs::set_permissions(path, Permissions::from_mode(0o600))?;
 
         let slf = Self::default();
         let s = toml::to_string_pretty(&slf)?;
 
-        fs::write(PATH, s).await?;
+        fs::write(PATH, s)?;
 
         Ok(())
     }
 
     #[inline]
-    pub async fn read() -> anyhow::Result<Self> {
-        let mut file = fs::File::open(PATH).await?;
+    pub fn read() -> anyhow::Result<Self> {
+        let mut file = fs::File::open(PATH)?;
 
         let mut content = String::with_capacity(128);
-        file.read_to_string(&mut content).await?;
+        file.read_to_string(&mut content)?;
 
         let slf = toml::from_str::<Self>(&content)?;
 

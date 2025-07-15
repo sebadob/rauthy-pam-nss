@@ -16,18 +16,25 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 static PROXY_SOCKET: &str = "/tmp/rauthy_proxy.sock";
 // static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
-// TODO add clap and accept the location or socket via arg? how to inform NSS then ?
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    Config::load().await?;
+fn main() -> anyhow::Result<()> {
+    Config::load()?;
 
     logging::init()?;
     info!("Rauthy NSS Proxy v {VERSION}");
 
     http_client::HttpClient::init();
 
-    server::run().await?;
+    let workers = Config::get().workers;
+    let rt = if workers == 1 {
+        tokio::runtime::Builder::new_current_thread()
+    } else {
+        tokio::runtime::Builder::new_multi_thread()
+    }
+        .enable_all()
+        .worker_threads(workers)
+        .build()?;
+
+    rt.block_on(async { server::run().await })?;
 
     Ok(())
 }
