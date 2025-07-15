@@ -129,7 +129,7 @@ impl RauthyPam {
     pub fn handle_authenticate(pamh: &Pam, username: &str) -> Result<(), PamError> {
         // sys_info(pamh, &format!("RauthyPam - login trying user {username}"));
 
-        let config = Config::load(pamh)?;
+        let config = Config::load_create(pamh)?;
         //
         // if !full_login
         //     && let Ok(Some(token)) = PamToken::try_load(&config, username)

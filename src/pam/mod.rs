@@ -8,7 +8,7 @@ pub mod token;
 
 macro_rules! load_config_token {
     ($pamh:expr, $username:expr) => {{
-        let config = match Config::load($pamh) {
+        let config = match Config::read() {
             Ok(c) => c,
             Err(err) => {
                 sys_err($pamh, &format!("Error loading config: {err}"));

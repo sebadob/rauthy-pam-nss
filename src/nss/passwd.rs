@@ -8,6 +8,7 @@ impl PasswdHooks for RauthyNss {
     fn get_all_entries() -> Response<Vec<Passwd>> {
         init_syslog();
 
+        println!("\nget_all_entries");
         let config = load_config_nss!();
         let url = config.url_getent();
         let payload = PamGetentRequest {

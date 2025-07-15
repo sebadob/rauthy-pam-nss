@@ -39,8 +39,8 @@ impl Config {
         path
     }
 
-    pub fn load(pamh: &Pam) -> Result<Self, PamError> {
-        match Self::read() {
+    pub fn load_create(pamh: &Pam) -> Result<Self, PamError> {
+        match Self::read_create() {
             Ok(slf) => Ok(slf),
             Err(err) => {
                 sys_err(pamh, &format!("Error loading config file: {err}"));
@@ -56,8 +56,33 @@ impl Config {
 
     #[inline]
     pub fn read() -> anyhow::Result<Self> {
+        // let uid = libc::getuid();
+
+        // let slf = match fs::read_to_string(PATH) {
+        //     Ok(content) => toml::from_str::<Self>(&content)?,
+        //     Err(err) => {
+        //         eprintln!("{err}");
+        //         panic!("nono");
+        //     }
+        // };
+        let content = fs::read_to_string(PATH)?;
+        // println!("{content:?}");
+
+        let slf = toml::from_str::<Self>(&content)?;
+
+        Ok(slf)
+    }
+
+    #[inline]
+    pub fn read_create() -> anyhow::Result<Self> {
+        println!("config path {PATH}");
         let mut file = File::open(PATH)?;
-        fs::set_permissions(PATH, Permissions::from_mode(0o600))?;
+        println!("{file:?}");
+
+        let perms = Permissions::from_mode(0o644);
+        if file.metadata()?.permissions() != perms {
+            fs::set_permissions(PATH, perms)?;
+        }
 
         let mut content = String::with_capacity(128);
         file.read_to_string(&mut content)?;

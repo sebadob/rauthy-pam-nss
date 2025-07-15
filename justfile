@@ -39,7 +39,7 @@ build profile="debug":
     set -euxo pipefail
     cargo build {{ profile }}
 
-# build the SELinux module from selinux/rauthy-pam.te and apply it (ty == local / ssh / nss)
+# build the SELinux module from selinux/ and apply it (ty == local / nis / nss / ssh)
 apply-selinux ty="local":
     #!/usr/bin/env bash
     set -euxo pipefail
@@ -51,6 +51,8 @@ apply-selinux ty="local":
         checkmodule -M -m -o pam-rauthy-local.mod pam-rauthy-local.te
         semodule_package -m pam-rauthy-local.mod -o pam-rauthy-local.pp
         sudo semodule -i pam-rauthy-local.pp
+    elif [[ {{ ty }} == "nis" ]]; then
+        setsebool -P nis_enabled 1
     elif [[ {{ ty }} == "nss" ]]; then
         echo 'Building and applying SELinux rules for NSS lookups'
         checkmodule -M -m -o pam-rauthy-nss.mod pam-rauthy-nss.te
@@ -61,11 +63,6 @@ apply-selinux ty="local":
         checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te
         semodule_package -m pam-rauthy-ssh.mod -o pam-rauthy-ssh.pp
         sudo semodule -i pam-rauthy-ssh.pp
-    elif [[ {{ ty }} == "su" ]]; then
-        echo 'Building and applying SELinux rules for su login'
-        checkmodule -M -m -o pam-rauthy-su.mod pam-rauthy-su.te
-        semodule_package -m pam-rauthy-su.mod -o pam-rauthy-su.pp
-        sudo semodule -i pam-rauthy-su.pp
     fi
 
 # remove the SELinux module
@@ -75,6 +72,7 @@ remove-selinux:
     sudo semodule -r pam-rauthy-local
     sudo semodule -r pam-rauthy-nss
     sudo semodule -r pam-rauthy-ssh
+    setsebool -P nis_enabled 0
 
 # create release build and copy it into /usr/lib64/security/pam_rauthy.so
 install-pam:
@@ -104,6 +102,8 @@ install-nss:
 update-authselect:
     #!/usr/bin/env bash
     set -euxo pipefail
+
+    # Expects an already created custom authselect profile named `rauthy`
 
     sudo cp templates/system-auth /etc/authselect/custom/rauthy/system-auth
     sudo cp templates/password-auth /etc/authselect/custom/rauthy/password-auth
