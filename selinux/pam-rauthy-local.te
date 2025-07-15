@@ -1,0 +1,67 @@
+
+module pam-rauthy-local 1.0;
+
+require {
+	type auditd_t;
+	type chkpwd_t;
+	type etc_t;
+    type http_port_t;
+    type init_t;
+	type local_login_t;
+	type mozilla_home_t;
+	type passwd_file_t;
+	type useradd_exec_t;
+	type home_root_t;
+	type user_home_t;
+	type user_home_dir_t;
+	type shadow_t;
+	type unconfined_t;
+	type unlabeled_t;
+	type var_lib_t;
+
+    class capability { fsetid setgid };
+	class dir { add_name create read search setattr write };
+	class file { create link map open read rename getattr setattr unlink write execute execute_no_trans };
+	class process { rlimitinh siginh };
+	class tcp_socket name_connect;
+}
+
+#============= auditd_t ==============
+allow auditd_t etc_t:file setattr;
+allow auditd_t http_port_t:tcp_socket name_connect;
+allow auditd_t var_lib_t:dir setattr;
+
+#=========== local_login_t =============
+
+# TCP connections to Rauthy
+allow local_login_t http_port_t:tcp_socket name_connect;
+
+# search for config files
+allow local_login_t unlabeled_t:dir search;
+
+# dynamically add / modify users
+allow local_login_t useradd_exec_t:file { execute execute_no_trans map };
+allow local_login_t etc_t:file { create link rename getattr setattr unlink write };
+allow local_login_t passwd_file_t:file { create open map rename setattr unlink write };
+allow local_login_t shadow_t:file { create open read map rename getattr setattr unlink write };
+
+# create home dir
+allow local_login_t mozilla_home_t:dir { add_name create read setattr write };
+allow local_login_t user_home_dir_t:dir { create setattr };
+allow local_login_t user_home_t:file { create open setattr write };
+allow local_login_t home_root_t:dir setattr;
+
+# access to /var/lib/ for persisting tokens
+allow local_login_t var_lib_t:dir { create setattr };
+allow local_login_t var_lib_t:file { create getattr open read write };
+
+#============= chkpwd_t ==============
+allow chkpwd_t etc_t:file setattr;
+
+allow chkpwd_t http_port_t:tcp_socket name_connect;
+allow chkpwd_t self:capability { fsetid setgid };
+allow chkpwd_t var_lib_t:dir setattr;
+
+#============= init_t ==============
+
+allow init_t chkpwd_t:process siginh;

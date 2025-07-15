@@ -1,0 +1,8 @@
+# CAUTION! This file is for development testing only!
+#
+# !!! NEVER use it like this for a real login !!!
+
+auth       required     pam_rauthy.so
+password   required     pam_rauthy.so
+account    required     pam_rauthy.so
+session    required     pam_rauthy.so

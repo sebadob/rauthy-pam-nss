@@ -1,0 +1,9 @@
+url = 'https://iam.onini.work'
+
+client_id = 'dev-test'
+client_secret = 'OsfJzDckqEPJSKxXHvIYqyllpiXNFkozYlqEphgwXLfIwqkPXxEkYQxMzagakHOd'
+
+default_groups = []
+
+wheel_roles = ['rauthy_admin']
+wheel_groups = []

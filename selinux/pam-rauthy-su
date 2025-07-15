@@ -1,0 +1,30 @@
+module pam-rauthy-su 1.0;
+
+require {
+	type etc_t;
+	type var_lib_t;
+	type xdm_t;
+	type chkpwd_t;
+	type init_t;
+	type http_port_t;
+	class capability { fsetid setgid };
+	class file setattr;
+	class dir setattr;
+	class tcp_socket name_connect;
+	class process { rlimitinh siginh };
+}
+
+#============= chkpwd_t ==============
+
+allow chkpwd_t etc_t:file setattr;
+allow chkpwd_t http_port_t:tcp_socket name_connect;
+allow chkpwd_t self:capability { fsetid setgid };
+allow chkpwd_t var_lib_t:dir setattr;
+
+#============= init_t ==============
+
+allow init_t chkpwd_t:process siginh;
+
+#============= xdm_t ==============
+
+allow xdm_t chkpwd_t:process { rlimitinh siginh };
