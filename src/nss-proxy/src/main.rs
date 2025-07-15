@@ -1,24 +1,33 @@
 use crate::config::Config;
 use log::info;
-use std::path::PathBuf;
 
+mod api_types;
 mod config;
+mod error;
 mod handler;
+mod http_client;
 mod logging;
 mod server;
-mod test;
+mod utils;
+// mod test;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// TODO change to /run after testing
+static PROXY_SOCKET: &str = "/tmp/rauthy_proxy.sock";
+// static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config = Config::load().await?;
-    logging::init(&config)?;
+    Config::load().await?;
+    logging::init()?;
+    http_client::HttpClient::init();
 
     info!("Hello World!");
 
-    let path = PathBuf::from(&config.listen_addr);
-    test::spawn_tests(path);
+    // test::spawn_tests();
 
-    server::run(config).await?;
+    server::run().await?;
 
     Ok(())
 }

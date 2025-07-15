@@ -1,6 +1,6 @@
-use crate::api_types::{Getent, PamGetentRequest, PamGetentResponse};
+use crate::api_types::PamGetentResponse;
 use crate::nss::RauthyNss;
-use crate::{init_syslog, load_config_nss, send_getent};
+use crate::{init_syslog, send_getent};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
 use log::info;
@@ -11,15 +11,15 @@ impl PasswdHooks for RauthyNss {
 
         info!("PasswdHooks get_all_entries");
 
-        let config = load_config_nss!();
-        let url = config.url_getent();
-        let payload = PamGetentRequest {
-            host_id: config.host_id,
-            host_secret: config.host_secret,
-            getent: Getent::Users,
-        };
+        // let config = load_config_nss!();
+        // let url = config.url_getent();
+        // let payload = GetentRequest {
+        //     host_id: config.host_id,
+        //     host_secret: config.host_secret,
+        //     getent: Getent::Users,
+        // };
 
-        match send_getent!(url, payload) {
+        match send_getent!("/getent/users/") {
             PamGetentResponse::Users(users) => {
                 let mut res = Vec::with_capacity(users.len());
 
@@ -50,16 +50,16 @@ impl PasswdHooks for RauthyNss {
 
         init_syslog();
 
-        let config = load_config_nss!();
-        let url = config.url_getent();
-        let payload = PamGetentRequest {
-            host_id: config.host_id,
-            host_secret: config.host_secret,
-            getent: Getent::UserId(uid),
-        };
-        info!("PasswdHooks get_entry_by_uid {uid:?} -> {payload:?}");
+        // let config = load_config_nss!();
+        // let url = config.url_getent();
+        // let payload = GetentRequest {
+        //     host_id: config.host_id,
+        //     host_secret: config.host_secret,
+        //     getent: Getent::UserId(uid),
+        // };
+        // info!("PasswdHooks get_entry_by_uid {uid:?} -> {payload:?}");
 
-        match send_getent!(url, payload) {
+        match send_getent!(&format!("/getent/users/uid/{uid}")) {
             PamGetentResponse::User(user) => {
                 let dir = format!("/home/{}", user.name);
                 Response::Success(Passwd {
@@ -81,15 +81,15 @@ impl PasswdHooks for RauthyNss {
 
         info!("PasswdHooks get_entry_by_name {name}");
 
-        let config = load_config_nss!();
-        let url = config.url_getent();
-        let payload = PamGetentRequest {
-            host_id: config.host_id,
-            host_secret: config.host_secret,
-            getent: Getent::Username(name),
-        };
+        // let config = load_config_nss!();
+        // let url = config.url_getent();
+        // let payload = GetentRequest {
+        //     host_id: config.host_id,
+        //     host_secret: config.host_secret,
+        //     getent: Getent::Username(name),
+        // };
 
-        match send_getent!(url, payload) {
+        match send_getent!(&format!("/getent/users/name/{name}")) {
             PamGetentResponse::User(user) => {
                 let dir = format!("/home/{}", user.name);
                 Response::Success(Passwd {

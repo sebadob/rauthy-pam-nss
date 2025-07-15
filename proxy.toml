@@ -1,8 +1,7 @@
-#listen_addr = "127.0.0.1:8000"
-listen_addr = "/tmp/rauthy_proxy.sock"
 rauthy_url = "http://localhost:8080"
 host_id = "BsFEpoAcVmlHgDGNSeiKmgIS"
 host_secret = "YFs7fly1lu9WRHsxzScOu1Qso9F1hLzbTrctrNJvT8rpfMY3SJ6w1uWG3fZxPm4H"
 data_dir = "./data/rauthy_proxy"
 # console | file | console_file | syslog
 log_target = "console"
+danger_allow_unsecure = true

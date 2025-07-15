@@ -49,10 +49,10 @@ impl Config {
         }
     }
 
-    #[inline]
-    pub fn url_getent(&self) -> String {
-        format!("{}auth/v1/pam/getent", self.url)
-    }
+    // #[inline]
+    // pub fn url_getent(&self) -> String {
+    //     format!("{}auth/v1/pam/getent", self.url)
+    // }
 
     #[inline]
     pub fn read() -> anyhow::Result<Self> {

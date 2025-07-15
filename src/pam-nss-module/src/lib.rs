@@ -1,4 +1,4 @@
-use libnss::{libnss_group_hooks, libnss_host_hooks, libnss_passwd_hooks, libnss_shadow_hooks};
+use libnss::{libnss_group_hooks, libnss_host_hooks, libnss_passwd_hooks};
 use log::LevelFilter;
 use nss::RauthyNss;
 use pam::RauthyPam;
@@ -12,8 +12,13 @@ mod api_types;
 mod config;
 mod nss;
 mod pam;
+mod uds;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// TODO change to /run after testing
+static PROXY_SOCKET: &str = "/tmp/rauthy_proxy.sock";
+// static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
 static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
     reqwest::Client::builder()
@@ -48,6 +53,6 @@ fn init_syslog() {
 pam_module!(RauthyPam);
 
 libnss_passwd_hooks!(rauthy, RauthyNss);
-libnss_shadow_hooks!(rauthy, RauthyNss);
+// libnss_shadow_hooks!(rauthy, RauthyNss);
 libnss_group_hooks!(rauthy, RauthyNss);
 libnss_host_hooks!(rauthy, RauthyNss);

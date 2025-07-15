@@ -1,6 +1,6 @@
+use bincode::Decode;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-
 // #[derive(Debug, Deserialize)]
 // struct ErrorResponse {
 //     timestamp: i64,
@@ -61,45 +61,45 @@ pub struct WebauthnServiceReq {
     // pub user_id: String,
 }
 
-#[derive(Debug, Serialize)]
-pub enum Getent {
-    Users,
-    Groups,
-    Username(String),
-    UserId(u32),
-    Groupname(String),
-    GroupId(u32),
-    Hosts,
-    Hostname(String),
-    HostIp(IpAddr),
-}
+// #[derive(Debug, Encode)]
+// pub enum Getent {
+//     Users,
+//     Groups,
+//     Username(String),
+//     UserId(u32),
+//     Groupname(String),
+//     GroupId(u32),
+//     Hosts,
+//     Hostname(String),
+//     HostIp(IpAddr),
+// }
 
-#[derive(Debug, Serialize)]
-pub struct PamGetentRequest {
-    pub host_id: String,
-    pub host_secret: String,
-    pub getent: Getent,
-}
+// #[derive(Debug, Encode)]
+// pub struct GetentRequest {
+//     pub host_id: String,
+//     pub host_secret: String,
+//     pub getent: Getent,
+// }
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-pub struct PamHostResponse {
+#[derive(Debug, Decode)]
+pub struct HostResponse {
     pub id: String,
     pub name: String,
     pub aliases: Vec<String>,
     pub addresses: Vec<IpAddr>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PamGroupResponse {
+#[derive(Debug, Decode)]
+pub struct GroupResponse {
     pub id: u32,
     pub name: String,
     // Vec<{username}>
     pub members: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PamUserResponse {
+#[derive(Debug, Decode)]
+pub struct UserResponse {
     pub id: u32,
     pub name: String,
     pub gid: u32,
@@ -107,12 +107,12 @@ pub struct PamUserResponse {
     pub shell: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Decode)]
 pub enum PamGetentResponse {
-    Users(Vec<PamUserResponse>),
-    User(PamUserResponse),
-    Groups(Vec<PamGroupResponse>),
-    Group(PamGroupResponse),
-    Hosts(Vec<PamHostResponse>),
-    Host(PamHostResponse),
+    Users(Vec<UserResponse>),
+    User(UserResponse),
+    Groups(Vec<GroupResponse>),
+    Group(GroupResponse),
+    Hosts(Vec<HostResponse>),
+    Host(HostResponse),
 }

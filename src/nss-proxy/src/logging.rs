@@ -61,7 +61,8 @@ fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn init(config: &Config) -> anyhow::Result<()> {
+pub fn init() -> anyhow::Result<()> {
+    let config = Config::get();
     if config.log_target == LogTarget::Syslog {
         init_syslog()
     } else {

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
+use std::sync::OnceLock;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 
@@ -11,6 +12,8 @@ use tokio::io::AsyncReadExt;
 static PATH: &str = "./proxy.toml";
 #[cfg(not(debug_assertions))]
 static PATH: &str = "/etc/rauthy/proxy.toml";
+
+static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -23,24 +26,26 @@ pub enum LogTarget {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub listen_addr: String,
+    // pub listen_addr: String,
     pub rauthy_url: Url,
     pub host_id: String,
     pub host_secret: String,
     #[serde(default = "data_path")]
     pub data_dir: Cow<'static, str>,
     pub log_target: LogTarget,
+    pub danger_allow_unsecure: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            listen_addr: "127.0.0.1:8000".to_string(),
+            // listen_addr: "127.0.0.1:8000".to_string(),
             rauthy_url: "https://iam.example.com".parse().unwrap(),
             host_id: "hostIdFromRauthy".to_string(),
             host_secret: "hostSecretFromRauthy".to_string(),
             data_dir: data_path(),
             log_target: LogTarget::Syslog,
+            danger_allow_unsecure: false,
         }
     }
 }
@@ -58,11 +63,17 @@ impl Config {
         Ok(())
     }
 
-    pub async fn load() -> anyhow::Result<Self> {
+    #[inline]
+    pub fn get() -> &'static Self {
+        CONFIG.get().unwrap()
+    }
+
+    pub async fn load() -> anyhow::Result<()> {
         match Self::read().await {
             Ok(slf) => {
                 slf.create_data_dir().await?;
-                Ok(slf)
+                CONFIG.set(slf).unwrap();
+                Ok(())
             }
             Err(err) => {
                 eprintln!("{err}");
