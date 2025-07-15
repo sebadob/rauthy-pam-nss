@@ -1390,6 +1390,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pam-nss-module"
+version = "0.0.1"
+dependencies = [
+    "anyhow",
+    "bincode",
+    "chrono",
+    "libc",
+    "libnss",
+    "log",
+    "pamsm",
+    "reqwest",
+    "serde",
+    "syslog",
+    "tokio",
+    "toml",
+    "webauthn-authenticator-rs",
+    "webauthn-rs",
+    "webauthn-rs-core",
+]
+
+[[package]]
 name = "pamsm"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1571,27 +1592,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
     "getrandom 0.2.16",
-]
-
-[[package]]
-name = "rauthy-pam-nss"
-version = "0.0.1"
-dependencies = [
-    "anyhow",
-    "bincode",
-    "chrono",
-    "libc",
-    "libnss",
-    "log",
-    "pamsm",
-    "reqwest",
-    "serde",
-    "syslog",
-    "tokio",
-    "toml",
-    "webauthn-authenticator-rs",
-    "webauthn-rs",
-    "webauthn-rs-core",
 ]
 
 [[package]]

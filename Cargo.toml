@@ -1,5 +1,8 @@
-[package]
-name = "rauthy-pam-nss"
+[workspace]
+resolver = "3"
+members = ["src/*"]
+
+[workspace.package]
 version = "0.0.1"
 edition = "2024"
 authors = ["Sebastian Dobe <sebastiandobe@mailbox.org>"]
@@ -11,11 +14,7 @@ license = "GPLv3"
 #strip = true
 #panic = "abort"
 
-[lib]
-name = "rauthy_pam_nss"
-crate-type = ["cdylib"]
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.98"
 bincode = { version = "2", features = ["serde"] }
 chrono = "0.4.41"
