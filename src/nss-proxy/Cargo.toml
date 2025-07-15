@@ -1,0 +1,26 @@
+[package]
+name = "rauthy-nss-proxy"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+#[profile.release]
+#codegen-units = 1
+#lto = true
+#strip = true
+#panic = "abort"
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+http-body-util.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+log.workspace = true
+log4rs.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+syslog.workspace = true
+tokio = { workspace = true, features = ["full"] }
+toml.workspace = true

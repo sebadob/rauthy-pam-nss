@@ -1,5 +1,5 @@
 [package]
-name = "pam-nss-module"
+name = "rauthy-pam-nss-module"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -26,7 +26,7 @@ pamsm.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 syslog.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt"] }
 toml.workspace = true
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "nfc", "ui-cli", "usb"] }
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "nfc", "ui-cli", "usb"] }
