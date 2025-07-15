@@ -25,10 +25,15 @@ Non-exhaustive list of features:
     - [ ] `getent hosts <host_ip>`
 - [x] Local Login with Password without local user -> resolved via NSS module
 - [x] Local login with Yubikey without local user -> resolved via NSS module
-- [x] `su - <rauthy_user>` with Password
-- [x] `su - <rauthy_user>` with Yubikey
+- [x] `su - <rauthy_user>` with Password (on a local host)
+- [x] `su - <rauthy_user>` with Yubikey (on a local host)
+- [ ] `su - <rauthy_user>` with Password (on a remote host)
+- [ ] `su - <rauthy_user>` with Yubikey (on a remote host)
 - [ ] ssh into a host with a non-existent, Rauthy-managed user with Password
 - [ ] ssh into a host with a non-existent, Rauthy-managed user with online Passkey validation
+- [ ] A way to make it possible to `sudo` / `su` to `root` when conditions are met. Probably done via an additional
+  PAM rule in the end which allows users to either do it without password when they are in a `wheel_rauthy` group,
+  or by requesting the same password as for `su` when `sudo` is available, to do a `sudo su -` in the end.
 - [ ] Login to window managers like `gdm` or `sddm`
 
 On the Rauthy side, a lot of updates are necessary as well of course. I currently
