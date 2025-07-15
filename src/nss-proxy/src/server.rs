@@ -13,7 +13,7 @@ pub async fn run() -> anyhow::Result<()> {
     let _ = tokio::fs::remove_file(&path).await;
     tokio::fs::create_dir_all(path.parent().unwrap()).await?;
 
-    let uds = UnixListener::bind(path.clone())?;
+    let uds = UnixListener::bind(path)?;
     let app = Router::new()
         .route("/", get(get_root))
         .nest(

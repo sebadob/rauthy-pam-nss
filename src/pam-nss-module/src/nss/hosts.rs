@@ -1,4 +1,4 @@
-use crate::api_types::PamGetentResponse;
+use crate::api_types::GetentResponse;
 use crate::nss::RauthyNss;
 use crate::{init_syslog, send_getent};
 use libnss::host::{AddressFamily, Addresses, Host, HostHooks};
@@ -9,16 +9,8 @@ impl HostHooks for RauthyNss {
     fn get_all_entries() -> Response<Vec<Host>> {
         init_syslog();
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::Hosts,
-        // };
-
         match send_getent!("/getent/hosts") {
-            PamGetentResponse::Hosts(hosts) => {
+            GetentResponse::Hosts(hosts) => {
                 let mut res = Vec::with_capacity(hosts.len());
 
                 for host in hosts {
@@ -39,16 +31,8 @@ impl HostHooks for RauthyNss {
     fn get_host_by_name(name: &str, family: AddressFamily) -> Response<Host> {
         init_syslog();
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::Hostname(name.to_string()),
-        // };
-
         match send_getent!(&format!("/getent/hosts/name/{name}")) {
-            PamGetentResponse::Host(host) => {
+            GetentResponse::Host(host) => {
                 let (v4, v6) = split_addrs(host.addresses);
                 let addresses = match family {
                     AddressFamily::IPv4 => Addresses::V4(v4),
@@ -72,16 +56,8 @@ impl HostHooks for RauthyNss {
     fn get_host_by_addr(addr: IpAddr) -> Response<Host> {
         init_syslog();
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::HostIp(addr),
-        // };
-
         match send_getent!(&format!("/getent/hosts/ip/{addr}")) {
-            PamGetentResponse::Host(host) => {
+            GetentResponse::Host(host) => {
                 let (v4, v6) = split_addrs(host.addresses);
                 Response::Success(Host {
                     name: host.name,

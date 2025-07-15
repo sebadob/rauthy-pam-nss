@@ -8,6 +8,7 @@ use std::fs::{File, Permissions};
 use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
 
+// TODO change path + data to the same location as the proxy to re-use it
 static PATH: &str = "/etc/security/pam_rauthy.toml";
 
 #[derive(Debug, Deserialize)]
@@ -17,8 +18,6 @@ pub struct Config {
     pub host_secret: String,
     #[serde(default = "data_path")]
     pub data_path: Cow<'static, str>,
-    // pub wheel_roles: Vec<String>,
-    // pub wheel_groups: Vec<String>,
 }
 
 #[inline]
@@ -49,27 +48,10 @@ impl Config {
         }
     }
 
-    // #[inline]
-    // pub fn url_getent(&self) -> String {
-    //     format!("{}auth/v1/pam/getent", self.url)
-    // }
-
     #[inline]
     pub fn read() -> anyhow::Result<Self> {
-        // let uid = libc::getuid();
-
-        // let slf = match fs::read_to_string(PATH) {
-        //     Ok(content) => toml::from_str::<Self>(&content)?,
-        //     Err(err) => {
-        //         eprintln!("{err}");
-        //         panic!("nono");
-        //     }
-        // };
         let content = fs::read_to_string(PATH)?;
-        // println!("{content:?}");
-
         let slf = toml::from_str::<Self>(&content)?;
-
         Ok(slf)
     }
 

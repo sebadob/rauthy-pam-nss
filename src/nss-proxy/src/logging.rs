@@ -28,8 +28,6 @@ fn init_syslog() -> anyhow::Result<()> {
 fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
     let target = &config.log_target;
 
-    println!("{}", config.data_dir);
-
     let mut builder = log4rs::Config::builder();
     let mut builder_root = Root::builder();
 

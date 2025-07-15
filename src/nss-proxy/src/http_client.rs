@@ -11,7 +11,6 @@ use reqwest::tls::Version;
 use std::sync::OnceLock;
 use std::time::Duration;
 
-// #[cfg(debug_assertions)]
 static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
 
 pub struct HttpClient;

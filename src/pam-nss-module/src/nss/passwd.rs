@@ -1,4 +1,4 @@
-use crate::api_types::PamGetentResponse;
+use crate::api_types::GetentResponse;
 use crate::nss::RauthyNss;
 use crate::{init_syslog, send_getent};
 use libnss::interop::Response;
@@ -11,16 +11,8 @@ impl PasswdHooks for RauthyNss {
 
         info!("PasswdHooks get_all_entries");
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::Users,
-        // };
-
-        match send_getent!("/getent/users/") {
-            PamGetentResponse::Users(users) => {
+        match send_getent!("/getent/users") {
+            GetentResponse::Users(users) => {
                 let mut res = Vec::with_capacity(users.len());
 
                 for user in users {
@@ -50,17 +42,8 @@ impl PasswdHooks for RauthyNss {
 
         init_syslog();
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::UserId(uid),
-        // };
-        // info!("PasswdHooks get_entry_by_uid {uid:?} -> {payload:?}");
-
         match send_getent!(&format!("/getent/users/uid/{uid}")) {
-            PamGetentResponse::User(user) => {
+            GetentResponse::User(user) => {
                 let dir = format!("/home/{}", user.name);
                 Response::Success(Passwd {
                     name: user.name,
@@ -81,16 +64,8 @@ impl PasswdHooks for RauthyNss {
 
         info!("PasswdHooks get_entry_by_name {name}");
 
-        // let config = load_config_nss!();
-        // let url = config.url_getent();
-        // let payload = GetentRequest {
-        //     host_id: config.host_id,
-        //     host_secret: config.host_secret,
-        //     getent: Getent::Username(name),
-        // };
-
         match send_getent!(&format!("/getent/users/name/{name}")) {
-            PamGetentResponse::User(user) => {
+            GetentResponse::User(user) => {
                 let dir = format!("/home/{}", user.name);
                 Response::Success(Passwd {
                     name: user.name,

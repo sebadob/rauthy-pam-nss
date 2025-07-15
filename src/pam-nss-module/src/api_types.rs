@@ -1,12 +1,6 @@
 use bincode::Decode;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-// #[derive(Debug, Deserialize)]
-// struct ErrorResponse {
-//     timestamp: i64,
-//     error: String,
-//     message: String,
-// }
 
 #[derive(Debug, Serialize)]
 pub struct PamLoginRequest {
@@ -108,7 +102,7 @@ pub struct UserResponse {
 }
 
 #[derive(Debug, Decode)]
-pub enum PamGetentResponse {
+pub enum GetentResponse {
     Users(Vec<UserResponse>),
     User(UserResponse),
     Groups(Vec<GroupResponse>),

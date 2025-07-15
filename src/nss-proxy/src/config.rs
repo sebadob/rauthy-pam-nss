@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 use std::sync::OnceLock;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -63,7 +64,7 @@ impl Config {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get() -> &'static Self {
         CONFIG.get().unwrap()
     }
@@ -94,8 +95,13 @@ impl Config {
             return Ok(());
         }
 
-        fs::File::create_new(PATH).await?;
-        fs::set_permissions(PATH, Permissions::from_mode(0o600)).await?;
+        let path = PathBuf::from(PATH);
+        let parent = path.parent().unwrap();
+        fs::create_dir_all(parent).await?;
+        fs::set_permissions(parent, Permissions::from_mode(0o600)).await?;
+
+        fs::File::create_new(&path).await?;
+        fs::set_permissions(path, Permissions::from_mode(0o600)).await?;
 
         let slf = Self::default();
         let s = toml::to_string_pretty(&slf)?;

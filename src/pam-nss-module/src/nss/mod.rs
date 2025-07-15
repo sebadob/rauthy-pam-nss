@@ -29,7 +29,7 @@ macro_rules! send_getent {
             };
 
             if status.is_success() {
-                match bincode::decode_from_slice::<$crate::api_types::PamGetentResponse, _>(
+                match bincode::decode_from_slice::<$crate::api_types::GetentResponse, _>(
                     body.as_ref(),
                     bincode::config::standard(),
                 ) {
