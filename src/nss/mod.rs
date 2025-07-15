@@ -23,8 +23,14 @@ macro_rules! send_getent {
             let res = match $crate::CLIENT.get($url).json(&$payload).send().await {
                 Ok(res) => res,
                 Err(err) => {
-                    log::error!("Error sending getent request: {}", err);
-                    return Err(libnss::interop::Response::Unavail);
+                    if err.is_connect() {
+                        log::error!("Connection error sending getent request: {}", err);
+                    } else if err.is_timeout() {
+                        log::error!("Timeout error sending getent request: {}", err);
+                    } else {
+                        log::error!("Error sending getent request: {}", err);
+                    }
+                    return Err(libnss::interop::Response::TryAgain);
                 }
             };
 

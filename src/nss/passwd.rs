@@ -3,12 +3,14 @@ use crate::nss::RauthyNss;
 use crate::{init_syslog, load_config_nss, send_getent};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
+use log::info;
 
 impl PasswdHooks for RauthyNss {
     fn get_all_entries() -> Response<Vec<Passwd>> {
         init_syslog();
 
-        println!("\nget_all_entries");
+        info!("PasswdHooks get_all_entries");
+
         let config = load_config_nss!();
         let url = config.url_getent();
         let payload = PamGetentRequest {
@@ -55,6 +57,7 @@ impl PasswdHooks for RauthyNss {
             host_secret: config.host_secret,
             getent: Getent::UserId(uid),
         };
+        info!("PasswdHooks get_entry_by_uid {uid:?} -> {payload:?}");
 
         match send_getent!(url, payload) {
             PamGetentResponse::User(user) => {
@@ -75,6 +78,8 @@ impl PasswdHooks for RauthyNss {
 
     fn get_entry_by_name(name: String) -> Response<Passwd> {
         init_syslog();
+
+        info!("PasswdHooks get_entry_by_name {name}");
 
         let config = load_config_nss!();
         let url = config.url_getent();
