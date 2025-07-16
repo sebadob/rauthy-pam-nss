@@ -43,7 +43,7 @@ fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
     }
 
     if target == &LogTarget::ConsoleFile || target == &LogTarget::File {
-        let trigger = SizeTrigger::new(10 * 1024);
+        let trigger = SizeTrigger::new(10 * 1024 * 1024);
         let roller = FixedWindowRoller::builder().build("/var/log/rauthy/rauthy-nss.{}.log", 5)?;
         let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
 
