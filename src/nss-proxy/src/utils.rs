@@ -9,7 +9,7 @@ where
     bincode::serde::encode_to_vec(value, bincode::config::standard()).map_err(|err| {
         Error::new(
             ErrorType::Internal,
-            format!("Cannot serialize value: {:?}", err),
+            format!("Cannot serialize value: {err:?}"),
         )
     })
 }

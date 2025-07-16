@@ -64,9 +64,9 @@ use std::net::IpAddr;
 #[derive(Debug, Serialize)]
 pub enum Getent {
     Users,
-    Groups,
     Username(String),
     UserId(u32),
+    Groups,
     Groupname(String),
     GroupId(u32),
     Hosts,
@@ -78,11 +78,11 @@ pub enum Getent {
 pub struct GetentRequest<'a> {
     pub host_id: &'a str,
     pub host_secret: &'a str,
-    pub getent: Getent,
+    pub getent: &'a Getent,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostResponse {
     pub id: String,
     pub name: String,
@@ -90,7 +90,7 @@ pub struct HostResponse {
     pub addresses: Vec<IpAddr>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GroupResponse {
     pub id: u32,
     pub name: String,
@@ -98,7 +98,7 @@ pub struct GroupResponse {
     pub members: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserResponse {
     pub id: u32,
     pub name: String,
@@ -107,7 +107,7 @@ pub struct UserResponse {
     pub shell: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GetentResponse {
     Users(Vec<UserResponse>),
     User(UserResponse),

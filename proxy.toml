@@ -1,8 +1,36 @@
+# Base URL of your Rauthy deployment.
 rauthy_url = "http://localhost:8080"
+
+# Access credentials for this host.
+# TODO Rauthy could implement an origin IP check during lookups.
 host_id = "BsFEpoAcVmlHgDGNSeiKmgIS"
 host_secret = "YFs7fly1lu9WRHsxzScOu1Qso9F1hLzbTrctrNJvT8rpfMY3SJ6w1uWG3fZxPm4H"
-data_dir = "./data/rauthy_proxy"
+
 # console | file | console_file | syslog
 log_target = "console"
+
+# !!! DO NOT USE IN PRODUCTION !!!
+#
+# Not allowing insecure requests in production is probably the most important
+# thing. If an attacker is able to spoof responses from Rauthy, account
+# and server takeover would be super easy. Always encrypt these queries!
 danger_allow_unsecure = true
+
+# Most servers should be absolutely fine with a single worker.
+# Only when you have a huge amount of conrurent users, you may increase it,
+# if you experience smaller latency issues.
 workers = 1
+
+# Cache TTLS in seconds. Should never be below 5.
+# Some command combinations, especially those with `sudo` and similar,
+# fire many queries consecutively very quickly.
+#
+# default: 60
+cache_ttl_groups = 10
+cache_ttl_hosts = 10
+cache_ttl_users = 10
+
+# The interval in seconds to flush / cleanup the cache.
+#
+# default: 900
+cache_flush_interval = 900

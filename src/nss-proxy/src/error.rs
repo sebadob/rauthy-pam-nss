@@ -8,6 +8,7 @@ pub enum ErrorType {
     Connection,
     Generic,
     Internal,
+    NotFound,
 }
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ pub struct Error {
 
 impl Display for ErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -34,7 +35,7 @@ impl Error {
         M: ToString,
     {
         Self {
-            error: error.into(),
+            error,
             message: message.to_string(),
         }
     }
@@ -47,6 +48,7 @@ impl IntoResponse for Error {
             ErrorType::Connection => 500,
             ErrorType::Generic => 400,
             ErrorType::Internal => 500,
+            ErrorType::NotFound => 404,
         };
 
         Response::builder()
@@ -59,7 +61,7 @@ impl IntoResponse for Error {
 
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
-        Error::new(ErrorType::BadRequest, format!("IO Error: {}", value))
+        Error::new(ErrorType::BadRequest, format!("IO Error: {value}"))
     }
 }
 
@@ -85,10 +87,7 @@ impl From<reqwest::header::ToStrError> for Error {
     fn from(value: reqwest::header::ToStrError) -> Self {
         Error::new(
             ErrorType::BadRequest,
-            format!(
-                "Request headers contained non ASCII characters: {:?}",
-                value
-            ),
+            format!("Request headers contained non ASCII characters: {value:?}"),
         )
     }
 }
@@ -97,7 +96,7 @@ impl From<reqwest::Error> for Error {
     fn from(value: reqwest::Error) -> Self {
         Error::new(
             ErrorType::Connection,
-            format!("Cannot send out HTTP request: {:?}", value),
+            format!("Cannot send out HTTP request: {value:?}"),
         )
     }
 }

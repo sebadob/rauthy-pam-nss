@@ -1,7 +1,6 @@
 use log::debug;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::fs;
 use std::fs::Permissions;
 use std::io::Read;
@@ -31,11 +30,15 @@ pub struct Config {
     pub rauthy_url: Url,
     pub host_id: String,
     pub host_secret: String,
-    #[serde(default = "data_path")]
-    pub data_dir: Cow<'static, str>,
+    // #[serde(default = "data_path")]
+    // pub data_dir: Cow<'static, str>,
     pub log_target: LogTarget,
     pub danger_allow_unsecure: bool,
     pub workers: usize,
+    pub cache_ttl_groups: u32,
+    pub cache_ttl_hosts: u32,
+    pub cache_ttl_users: u32,
+    pub cache_flush_interval: u64,
 }
 
 impl Default for Config {
@@ -45,27 +48,19 @@ impl Default for Config {
             rauthy_url: "https://iam.example.com".parse().unwrap(),
             host_id: "hostIdFromRauthy".to_string(),
             host_secret: "hostSecretFromRauthy".to_string(),
-            data_dir: data_path(),
+            // data_dir: data_path(),
             log_target: LogTarget::Syslog,
             danger_allow_unsecure: false,
             workers: 1,
+            cache_ttl_groups: 60,
+            cache_ttl_hosts: 60,
+            cache_ttl_users: 60,
+            cache_flush_interval: 900,
         }
     }
 }
 
-#[inline]
-fn data_path() -> Cow<'static, str> {
-    "/var/lib/rauthy_proxy".into()
-}
-
 impl Config {
-    #[inline]
-    pub fn create_data_dir(&self) -> anyhow::Result<()> {
-        fs::create_dir_all(self.data_dir.as_ref())?;
-        fs::set_permissions(self.data_dir.as_ref(), Permissions::from_mode(0o700))?;
-        Ok(())
-    }
-
     #[inline(always)]
     pub fn get() -> &'static Self {
         CONFIG.get().unwrap()
@@ -74,7 +69,6 @@ impl Config {
     pub fn load() -> anyhow::Result<()> {
         match Self::read() {
             Ok(slf) => {
-                slf.create_data_dir()?;
                 CONFIG.set(slf).unwrap();
                 Ok(())
             }

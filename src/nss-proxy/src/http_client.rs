@@ -1,12 +1,9 @@
 use crate::VERSION;
 use crate::api_types::{Getent, GetentRequest, GetentResponse};
 use crate::config::Config;
-use crate::error::{Error, ErrorType};
-use crate::handler::ApiResponse;
+use crate::error::Error;
 use crate::utils::serialize;
-use axum::body::Body;
-use axum::response::Response;
-use log::info;
+use log::error;
 use reqwest::tls::Version;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -32,13 +29,14 @@ impl HttpClient {
         } else {
             builder
         }
-            .build()
-            .unwrap();
+        .build()
+        .unwrap();
 
         CLIENT.set(client).unwrap();
     }
 
-    pub async fn getent(getent: Getent) -> ApiResponse {
+    #[inline]
+    pub async fn getent(getent: &Getent) -> Result<Option<Vec<u8>>, Error> {
         // TODO impl and check local cache first
 
         let config = Config::get();
@@ -50,24 +48,23 @@ impl HttpClient {
             getent,
         };
 
-        let res = CLIENT
-            .get()
-            .unwrap()
-            .post(url)
-            .json(&payload)
-            .send()
-            .await?;
+        let res = match CLIENT.get().unwrap().post(url).json(&payload).send().await {
+            Ok(r) => r,
+            Err(err) => {
+                error!("Error sending request to Rauthy: {err:?}");
+                return Err(Error::from(err));
+            }
+        };
+
         if res.status().is_success() {
             let resp = res.json::<GetentResponse>().await?;
-            info!("{resp:?}");
+            // info!("{resp:?}");
             let bytes = serialize(&resp)?;
-            Ok(Response::builder()
-                .status(200)
-                .body(Body::from(bytes))
-                .unwrap())
+            Ok(Some(bytes))
         } else {
-            let msg = res.text().await?;
-            Err(Error::new(ErrorType::Connection, msg))
+            // let msg = res.text().await?;
+            // error!("{msg}");
+            Ok(None)
         }
     }
 }

@@ -1,7 +1,9 @@
+use crate::cache::Cache;
 use crate::config::Config;
 use log::info;
 
 mod api_types;
+mod cache;
 mod config;
 mod error;
 mod handler;
@@ -30,11 +32,14 @@ fn main() -> anyhow::Result<()> {
     } else {
         tokio::runtime::Builder::new_multi_thread()
     }
-        .enable_all()
-        .worker_threads(workers)
-        .build()?;
+    .enable_all()
+    .worker_threads(workers)
+    .build()?;
 
-    rt.block_on(async { server::run().await })?;
+    rt.block_on(async {
+        Cache::init();
+        server::run().await
+    })?;
 
     Ok(())
 }

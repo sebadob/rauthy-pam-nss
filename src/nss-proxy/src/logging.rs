@@ -1,12 +1,12 @@
 use crate::config::{Config, LogTarget};
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
-use log4rs::append::rolling_file::RollingFileAppender;
-use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
-use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
-use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
+// use log4rs::append::rolling_file::RollingFileAppender;
+// use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
+// use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
+// use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
 use log4rs::config::{Appender, Root};
-use log4rs::encode::pattern::PatternEncoder;
+// use log4rs::encode::pattern::PatternEncoder;
 use std::{mem, process};
 use syslog::{BasicLogger, Facility, Formatter3164};
 
@@ -37,19 +37,20 @@ fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
         builder_root = builder_root.appender("stdout");
     }
 
-    if target == &LogTarget::ConsoleFile || target == &LogTarget::File {
-        let trigger = SizeTrigger::new(10 * 1024);
-        let roller = FixedWindowRoller::builder()
-            .build(&format!("{}/proxy.{{}}.log", config.data_dir), 5)?;
-        let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
-
-        let file = RollingFileAppender::builder()
-            .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
-            .build(format!("{}/proxy.log", config.data_dir), Box::new(policy))?;
-
-        builder = builder.appender(Appender::builder().build("file", Box::new(file)));
-        builder_root = builder_root.appender("file");
-    }
+    // if target == &LogTarget::ConsoleFile || target == &LogTarget::File {
+    //     let trigger = SizeTrigger::new(10 * 1024);
+    //     let roller = FixedWindowRoller::builder()
+    //         // TODO change to logs dir and in prod, probably put in /var/log
+    //         .build(&format!("{}/proxy.{{}}.log", config.data_dir), 5)?;
+    //     let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
+    //
+    //     let file = RollingFileAppender::builder()
+    //         .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
+    //         .build(format!("{}/proxy.log", config.data_dir), Box::new(policy))?;
+    //
+    //     builder = builder.appender(Appender::builder().build("file", Box::new(file)));
+    //     builder_root = builder_root.appender("file");
+    // }
 
     let config = builder.build(builder_root.build(LevelFilter::Info))?;
 
