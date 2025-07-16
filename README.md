@@ -27,7 +27,7 @@ Non-exhaustive list of features:
 - [x] Local login with Yubikey without local user -> resolved via NSS module
 - [x] `su - <rauthy_user>` with Password (on a local host)
 - [x] `su - <rauthy_user>` with Yubikey (on a local host)
-- [ ] `su - <rauthy_user>` with Password (on a remote host)
+- [x] `su - <rauthy_user>` with Password (on a remote host)
 - [ ] `su - <rauthy_user>` with Yubikey (on a remote host)
 - [x] ssh into a host with a non-existent, Rauthy-managed user with Password
 - [ ] ssh into a host with a non-existent, Rauthy-managed user with online Passkey validation
