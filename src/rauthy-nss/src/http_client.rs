@@ -3,7 +3,7 @@ use crate::api_types::{Getent, GetentRequest, GetentResponse};
 use crate::config::Config;
 use crate::error::Error;
 use crate::utils::serialize;
-use log::error;
+use log::{debug, error};
 use reqwest::tls::Version;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -58,7 +58,7 @@ impl HttpClient {
 
         if res.status().is_success() {
             let resp = res.json::<GetentResponse>().await?;
-            // info!("{resp:?}");
+            debug!("{resp:?}");
             let bytes = serialize(&resp)?;
             Ok(Some(bytes))
         } else {

@@ -1,5 +1,5 @@
 [package]
-name = "rauthy-nss-proxy"
+name = "rauthy-nss"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

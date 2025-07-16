@@ -39,10 +39,10 @@ impl Cache {
     }
 
     #[inline]
-    pub fn get(key: &str) -> Option<Vec<u8>> {
+    pub fn get(key: &str) -> Option<Option<Vec<u8>>> {
         let v = CACHE.get(key)?;
         if v.exp > Utc::now().timestamp() {
-            return v.value.clone();
+            return Some(v.value.clone());
         }
         None
     }

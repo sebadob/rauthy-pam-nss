@@ -1788,7 +1788,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rauthy-nss-proxy"
+name = "rauthy-nss"
 version = "0.0.1"
 dependencies = [
  "anyhow",

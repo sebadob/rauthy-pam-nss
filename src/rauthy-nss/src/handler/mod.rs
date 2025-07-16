@@ -6,7 +6,7 @@ use crate::error::{Error, ErrorType};
 use crate::http_client::HttpClient;
 use axum::body::Body;
 use axum::http::Response;
-use log::info;
+use log::{debug, info};
 
 pub mod groups;
 pub mod hosts;
@@ -68,16 +68,22 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         }
     };
 
-    if let Some(value) = cached {
-        info!("Cache hit");
-        return Ok(Response::builder()
-            .status(200)
-            .body(Body::from(value))
-            .unwrap());
+    if let Some(opt) = cached {
+        debug!("Cache hit");
+        return match opt {
+            None => {
+                // we do this check for negative caching
+                Err(Error::new(ErrorType::BadRequest, "value not found"))
+            }
+            Some(value) => Ok(Response::builder()
+                .status(200)
+                .body(Body::from(value))
+                .unwrap()),
+        };
     }
 
     let resp = HttpClient::getent(&getent).await?;
-    info!("Cache miss, new value: {resp:?}");
+    info!("Cache miss");
 
     let config = Config::get();
     let value = resp.clone();
