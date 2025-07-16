@@ -20,9 +20,9 @@ Non-exhaustive list of features:
     - [x] `getent group <group_id>`
 - [x] NSS module to resolve non-local hosts (`getent hosts`) - currently a bit weird / unstable in behavior, even
   though the functions are implemented and working properly. This is probably a config issue.
-    - [ ] `getent hosts`
+    - [x] `getent hosts`
     - [ ] `getent hosts <hostname>`
-    - [ ] `getent hosts <host_ip>`
+    - [x] `getent hosts <host_ip>`
 - [x] Local Login with Password without local user -> resolved via NSS module
 - [x] Local login with Yubikey without local user -> resolved via NSS module
 - [x] `su - <rauthy_user>` with Password (on a local host)
