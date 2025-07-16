@@ -26,7 +26,7 @@ fn main() -> anyhow::Result<()> {
     Config::load()?;
 
     logging::init()?;
-    info!("Rauthy NSS Proxy v {VERSION}");
+    info!("Rauthy NSS Proxy v{VERSION}");
     info!("Using config file from {CONFIG_PATH}");
 
     http_client::HttpClient::init();
@@ -49,6 +49,8 @@ fn main() -> anyhow::Result<()> {
 
         server::run().await
     })?;
+
+    info!("Shutting down");
 
     Ok(())
 }

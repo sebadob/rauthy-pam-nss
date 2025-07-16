@@ -48,7 +48,7 @@ fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
         let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
 
         let file = RollingFileAppender::builder()
-            .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
+            .encoder(Box::new(PatternEncoder::new("{d} {m}{n}")))
             .build("/var/log/rauthy/rauthy-nss.log", Box::new(policy))?;
 
         builder = builder.appender(Appender::builder().build("file", Box::new(file)));
