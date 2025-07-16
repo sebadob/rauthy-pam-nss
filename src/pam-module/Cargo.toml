@@ -1,38 +1,24 @@
 [package]
-name = "rauthy-pam-nss-module"
+name = "rauthy-pam-module"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
-#[profile.release]
-#codegen-units = 1
-#lto = true
-#strip = true
-#panic = "abort"
-
 [lib]
-name = "rauthy_pam_nss"
+name = "rauthy_pam"
 crate-type = ["cdylib"]
 
 [dependencies]
 anyhow.workspace = true
 bincode.workspace = true
 chrono.workspace = true
-http-body-util.workspace = true
-hyper.workspace = true
-hyper-util.workspace = true
-libc.workspace = true
-libnss.workspace = true
-log.workspace = true
 pamsm.workspace = true
 reqwest.workspace = true
 serde.workspace = true
-syslog.workspace = true
 tokio = { workspace = true, features = ["rt"] }
 toml.workspace = true
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "nfc", "ui-cli", "usb"] }
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "nfc", "ui-cli", "usb"] }
 webauthn-authenticator-rs.workspace = true
 webauthn-rs.workspace = true
-webauthn-rs-core.workspace = true

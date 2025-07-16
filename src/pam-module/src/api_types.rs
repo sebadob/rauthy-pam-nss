@@ -1,6 +1,4 @@
-use bincode::Decode;
 use serde::{Deserialize, Serialize};
-use std::net::IpAddr;
 
 #[derive(Debug, Serialize)]
 pub struct PamLoginRequest {
@@ -53,60 +51,4 @@ pub struct WebauthnAuthFinishRequest {
 pub struct WebauthnServiceReq {
     pub code: String,
     // pub user_id: String,
-}
-
-// #[derive(Debug, Encode)]
-// pub enum Getent {
-//     Users,
-//     Groups,
-//     Username(String),
-//     UserId(u32),
-//     Groupname(String),
-//     GroupId(u32),
-//     Hosts,
-//     Hostname(String),
-//     HostIp(IpAddr),
-// }
-
-// #[derive(Debug, Encode)]
-// pub struct GetentRequest {
-//     pub host_id: String,
-//     pub host_secret: String,
-//     pub getent: Getent,
-// }
-
-#[allow(dead_code)]
-#[derive(Debug, Decode)]
-pub struct HostResponse {
-    pub id: String,
-    pub name: String,
-    pub aliases: Vec<String>,
-    pub addresses: Vec<IpAddr>,
-}
-
-#[derive(Debug, Decode)]
-pub struct GroupResponse {
-    pub id: u32,
-    pub name: String,
-    // Vec<{username}>
-    pub members: Vec<String>,
-}
-
-#[derive(Debug, Decode)]
-pub struct UserResponse {
-    pub id: u32,
-    pub name: String,
-    pub gid: u32,
-    pub email: String,
-    pub shell: String,
-}
-
-#[derive(Debug, Decode)]
-pub enum GetentResponse {
-    Users(Vec<UserResponse>),
-    User(UserResponse),
-    Groups(Vec<GroupResponse>),
-    Group(GroupResponse),
-    Hosts(Vec<HostResponse>),
-    Host(HostResponse),
 }

@@ -1,12 +1,13 @@
-use crate::VERSION;
 use crate::api_types::Getent;
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::error::{Error, ErrorType};
 use crate::http_client::HttpClient;
+use crate::{RAUTHY_HEALTHY, VERSION};
 use axum::body::Body;
 use axum::http::Response;
-use log::{debug, info};
+use log::{debug, error, info};
+use std::sync::atomic::Ordering;
 
 pub mod groups;
 pub mod hosts;
@@ -73,7 +74,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         return match opt {
             None => {
                 // we do this check for negative caching
-                Err(Error::new(ErrorType::BadRequest, "value not found"))
+                Err(Error::new(ErrorType::NotFound, "value not found"))
             }
             Some(value) => Ok(Response::builder()
                 .status(200)
@@ -82,10 +83,27 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         };
     }
 
-    let resp = HttpClient::getent(&getent).await?;
-    info!("Cache miss");
+    if !RAUTHY_HEALTHY.load(Ordering::Relaxed) {
+        // We must avoid a chicken-and-egg problem here.
+        // During startup for instance, we try to resolve our own target
+        // address via the systems hosts, for which we should provide the data.
+        // If the connection to Rauthy is unhealthy or Rauthy itself is unhealthy,
+        // just send back NotFound.
+        return Err(Error::new(ErrorType::NotFound, "value not found"));
+    }
 
     let config = Config::get();
+
+    let resp = match HttpClient::getent(&getent).await {
+        Ok(r) => r,
+        Err(err) => {
+            error!("Rauthy Connection Error: {err:?}");
+            Cache::set(cache_key, None, 10);
+            return Err(Error::new(ErrorType::NotFound, "value not found"));
+        }
+    };
+    info!("Cache miss");
+
     let value = resp.clone();
     match getent {
         Getent::Users | Getent::UserId(_) | Getent::Username(_) => {
@@ -100,7 +118,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
     };
 
     match resp {
-        None => Err(Error::new(ErrorType::BadRequest, "value not found")),
+        None => Err(Error::new(ErrorType::NotFound, "value not found")),
         Some(value) => Ok(Response::builder()
             .status(200)
             .body(Body::from(value))

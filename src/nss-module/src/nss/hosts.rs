@@ -1,5 +1,5 @@
+use crate::RauthyNss;
 use crate::api_types::GetentResponse;
-use crate::nss::RauthyNss;
 use crate::{init_syslog, send_getent};
 use libnss::host::{AddressFamily, Addresses, Host, HostHooks};
 use libnss::interop::Response;

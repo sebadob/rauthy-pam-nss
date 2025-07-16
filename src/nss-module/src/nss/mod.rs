@@ -1,25 +1,22 @@
+use std::sync::LazyLock;
+
 mod group;
 mod hosts;
 mod passwd;
 mod shadow;
 
-#[macro_export]
-macro_rules! load_config_nss {
-    () => {
-        match $crate::config::Config::read() {
-            Ok(c) => c,
-            Err(err) => {
-                log::error!("Error loading config: {}", err);
-                return libnss::interop::Response::Unavail;
-            }
-        }
-    };
-}
+static RT: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_current_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("Cannot build tokio runtime")
+});
 
 #[macro_export]
 macro_rules! send_getent {
     ($path:expr) => {
-        match $crate::RT.block_on(async {
+        match $crate::nss::RT.block_on(async {
             let (status, body) = match $crate::uds::get($path).await {
                 Ok(r) => r,
                 Err(err) => {
@@ -52,5 +49,3 @@ macro_rules! send_getent {
         }
     };
 }
-
-pub struct RauthyNss;

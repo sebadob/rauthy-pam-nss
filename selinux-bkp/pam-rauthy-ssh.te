@@ -6,17 +6,12 @@ require {
     type home_root_t;
     type http_port_t;
 	type sshd_t;
-	type unconfined_service_t;
 	type unlabeled_t;
 	type var_lib_t;
-	type var_run_t;
 
 	class dir { setattr };
 	class file { setattr getattr open read write };
 	class tcp_socket name_connect;
-
-	class sock_file write;
-	class unix_stream_socket connectto;
 }
 
 #============= sshd_t ==============
@@ -25,6 +20,3 @@ allow sshd_t home_root_t:dir setattr;
 allow sshd_t unlabeled_t:file read;
 allow sshd_t var_lib_t:dir setattr;
 allow sshd_t var_lib_t:file { getattr open read write };
-
-allow sshd_t var_run_t:sock_file write;
-allow sshd_t unconfined_service_t:unix_stream_socket connectto;

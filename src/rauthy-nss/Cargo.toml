@@ -5,21 +5,12 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
-#[profile.release]
-#codegen-units = 1
-#lto = true
-#strip = true
-#panic = "abort"
-
 [dependencies]
 anyhow.workspace = true
 axum.workspace = true
 bincode.workspace = true
 dashmap.workspace = true
 chrono.workspace = true
-#http-body-util.workspace = true
-#hyper.workspace = true
-#hyper-util.workspace = true
 log.workspace = true
 log4rs.workspace = true
 reqwest.workspace = true
@@ -27,4 +18,3 @@ serde.workspace = true
 syslog.workspace = true
 tokio = { workspace = true, features = ["full"] }
 toml.workspace = true
-#webauthn-rs.workspace = true

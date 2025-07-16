@@ -17,8 +17,9 @@ impl HttpClient {
         let builder = reqwest::Client::builder()
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(10))
-            // .http2_prior_knowledge()
             .min_tls_version(Version::TLS_1_2)
+            .hickory_dns(true)
+            .use_rustls_tls()
             .user_agent(format!("Rauthy NSS Proxy v{VERSION}"));
 
         let client = if !Config::get().danger_allow_unsecure {
@@ -33,6 +34,11 @@ impl HttpClient {
         .unwrap();
 
         CLIENT.set(client).unwrap();
+    }
+
+    #[inline]
+    pub fn client() -> &'static reqwest::Client {
+        CLIENT.get().unwrap()
     }
 
     #[inline]

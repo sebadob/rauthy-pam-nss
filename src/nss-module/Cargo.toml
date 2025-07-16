@@ -1,0 +1,22 @@
+[package]
+name = "rauthy-nss-module"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+name = "rauthy_nss"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow.workspace = true
+bincode.workspace = true
+http-body-util.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+libc.workspace = true
+libnss.workspace = true
+log.workspace = true
+syslog.workspace = true
+tokio = { workspace = true, features = ["rt"] }

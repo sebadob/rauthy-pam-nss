@@ -1,0 +1,41 @@
+
+module pam-rauthy-local 1.0;
+
+require {
+	type useradd_exec_t;
+	type unlabeled_t;
+	type http_cache_port_t;
+	type xdm_var_lib_t;
+	type home_root_t;
+	type unconfined_t;
+	type getty_t;
+	type var_lib_t;
+	type etc_t;
+	type http_port_t;
+	type local_login_t;
+	class dir { create getattr search setattr };
+	class tcp_socket name_connect;
+	class file { create execute execute_no_trans getattr open read setattr write };
+	class capability net_admin;
+	class process { noatsecure siginh };
+}
+
+#============= getty_t ==============
+
+#allow getty_t local_login_t:process siginh;
+
+#============= local_login_t ==============
+allow local_login_t etc_t:file setattr;
+allow local_login_t home_root_t:dir setattr;
+allow local_login_t http_port_t:tcp_socket name_connect;
+allow local_login_t http_cache_port_t:tcp_socket name_connect;
+
+#allow local_login_t self:capability net_admin;
+
+#allow local_login_t unconfined_t:process noatsecure;
+allow local_login_t unlabeled_t:dir search;
+allow local_login_t useradd_exec_t:file { execute execute_no_trans };
+
+allow local_login_t var_lib_t:dir { create setattr };
+allow local_login_t var_lib_t:file { create getattr open read write };
+#allow local_login_t xdm_var_lib_t:dir getattr;

@@ -26,9 +26,9 @@ workers = 1
 # fire many queries consecutively very quickly.
 #
 # default: 60
-cache_ttl_groups = 10
-cache_ttl_hosts = 10
-cache_ttl_users = 10
+cache_ttl_groups = 60
+cache_ttl_hosts = 60
+cache_ttl_users = 60
 
 # The interval in seconds to flush / cleanup the cache.
 #

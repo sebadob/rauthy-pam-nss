@@ -1,6 +1,5 @@
 use crate::api_types::GetentResponse;
-use crate::nss::RauthyNss;
-use crate::{init_syslog, send_getent};
+use crate::{RauthyNss, init_syslog, send_getent};
 use libc::gid_t;
 use libnss::group::{Group, GroupHooks};
 use libnss::interop::Response;

@@ -9,9 +9,9 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 #[cfg(debug_assertions)]
-static PATH: &str = "./proxy.toml";
+pub static CONFIG_PATH: &str = "./proxy.toml";
 #[cfg(not(debug_assertions))]
-static PATH: &str = "/etc/rauthy/proxy.toml";
+pub static CONFIG_PATH: &str = "/etc/rauthy/proxy.toml";
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -76,7 +76,7 @@ impl Config {
                 eprintln!("{err}");
                 match Self::create_template() {
                     Ok(_) => Err(anyhow::Error::msg(format!(
-                        "Creating template config in {PATH}. Edit it and paste the correct values."
+                        "Creating template config in {CONFIG_PATH}. Edit it and paste the correct values."
                     ))),
                     Err(err) => Err(err),
                 }
@@ -86,12 +86,12 @@ impl Config {
 
     #[inline]
     pub fn create_template() -> anyhow::Result<()> {
-        if fs::exists(PATH)? {
+        if fs::exists(CONFIG_PATH)? {
             debug!("Config file exists already - nothing to do");
             return Ok(());
         }
 
-        let path = PathBuf::from(PATH);
+        let path = PathBuf::from(CONFIG_PATH);
         let parent = path.parent().unwrap();
         fs::create_dir_all(parent)?;
         fs::set_permissions(parent, Permissions::from_mode(0o600))?;
@@ -102,14 +102,14 @@ impl Config {
         let slf = Self::default();
         let s = toml::to_string_pretty(&slf)?;
 
-        fs::write(PATH, s)?;
+        fs::write(CONFIG_PATH, s)?;
 
         Ok(())
     }
 
     #[inline]
     pub fn read() -> anyhow::Result<Self> {
-        let mut file = fs::File::open(PATH)?;
+        let mut file = fs::File::open(CONFIG_PATH)?;
 
         let mut content = String::with_capacity(128);
         file.read_to_string(&mut content)?;

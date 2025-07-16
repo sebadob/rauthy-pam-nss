@@ -1,0 +1,12 @@
+[Unit]
+Description=Rauthy NSS Proxy
+After=network.target
+
+[Service]
+ExecStart=/usr/local/sbin/rauthy-nss
+Type=exec
+Restart=always
+
+[Install]
+WantedBy=default.target
+RequiredBy=network.target

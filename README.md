@@ -29,7 +29,7 @@ Non-exhaustive list of features:
 - [x] `su - <rauthy_user>` with Yubikey (on a local host)
 - [ ] `su - <rauthy_user>` with Password (on a remote host)
 - [ ] `su - <rauthy_user>` with Yubikey (on a remote host)
-- [ ] ssh into a host with a non-existent, Rauthy-managed user with Password
+- [x] ssh into a host with a non-existent, Rauthy-managed user with Password
 - [ ] ssh into a host with a non-existent, Rauthy-managed user with online Passkey validation
 - [ ] A way to make it possible to `sudo` / `su` to `root` when conditions are met. Probably done via an additional
   PAM rule in the end which allows users to either do it without password when they are in a `wheel_rauthy` group,

@@ -1,6 +1,6 @@
 set shell := ["bash", "-uc"]
 
-export MSRV := `cat hiqlite/Cargo.toml | grep '^rust-version =' | cut -d " " -f3 | xargs`
+export MSRV := `cat Cargo.toml | grep '^rust-version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
 pam_file := "rauthy-test"
 test_user := "sebadob"
@@ -33,11 +33,27 @@ clippy:
     clear
     cargo clippy
 
-# builds the code
+# builds the nss proxy
 build profile="debug":
     #!/usr/bin/env bash
     set -euxo pipefail
     cargo build {{ profile }}
+
+# builds the nss proxy in release mode and copies it into the system
+build-install:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    sudo systemctl stop rauthy-nss || echo 'rauthy-nss service not running'
+
+    cargo build --release
+
+    sudo cp target/release/rauthy-nss /usr/local/sbin/
+
+    sudo cp templates/rauthy-nss.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl start rauthy-nss
+    sudo systemctl status rauthy-nss
 
 # build the SELinux module from selinux/ and apply it (ty == local / nis / nss / ssh)
 apply-selinux ty="local":
@@ -65,7 +81,7 @@ apply-selinux ty="local":
         sudo semodule -i pam-rauthy-ssh.pp
     fi
 
-# remove the SELinux module
+# remove the SELinux modules
 remove-selinux:
     #!/usr/bin/env bash
     set -euxo pipefail
@@ -83,7 +99,7 @@ install-pam:
 
     # Remove either an existing file or symlink
     test -f /usr/lib64/security/pam_rauthy.so && sudo rm -f /usr/lib64/security/pam_rauthy.so
-    sudo cp target/release/librauthy_pam_nss.so /usr/lib64/security/pam_rauthy.so
+    sudo cp target/release/librauthy_pam.so /usr/lib64/security/pam_rauthy.so
 
 # build an install the nss module
 install-nss:
@@ -95,8 +111,8 @@ install-nss:
      test -f /usr/lib64/libnss_r && sudo rm /usr/lib64/libnss_r
      test -f /usr/lib64/libnss_rauthy.so.2 && sudo rm /usr/lib64/libnss_rauthy.so.2
 
-     sudo cp target/release/librauthy_pam_nss.so /usr/lib64/libnss_rauthy.so.2
-     sudo cp target/release/librauthy_pam_nss.so /lib/libnss_rauthy.so.2
+     sudo cp target/release/librauthy_nss.so /usr/lib64/libnss_rauthy.so.2
+     sudo cp target/release/librauthy_nss.so /lib/libnss_rauthy.so.2
 
 # copies templates/system-auth to /etc/authselect/custom/rauthy/system-auth and re-applies it
 update-authselect:

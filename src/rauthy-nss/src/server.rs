@@ -4,7 +4,11 @@ use crate::handler::groups::*;
 use crate::handler::hosts::*;
 use crate::handler::users::*;
 use axum::{Router, routing::get};
+use log::info;
+use std::fs::Permissions;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+use tokio::fs;
 use tokio::net::UnixListener;
 
 pub async fn run() -> anyhow::Result<()> {
@@ -14,6 +18,12 @@ pub async fn run() -> anyhow::Result<()> {
     tokio::fs::create_dir_all(path.parent().unwrap()).await?;
 
     let uds = UnixListener::bind(path)?;
+    // The socket must be available for world.
+    // It does not leak any information that a normal user on the system would not be able
+    // to see anyway. It only exports NSS information, that e.g. anyone could read anyway by
+    // from /etc/passwd anyway.
+    fs::set_permissions(PROXY_SOCKET, Permissions::from_mode(0o766)).await?;
+
     let app = Router::new()
         .route("/", get(get_root))
         .nest(
@@ -31,6 +41,7 @@ pub async fn run() -> anyhow::Result<()> {
         )
         .into_make_service();
 
+    info!("Listening on socket {PROXY_SOCKET}");
     axum::serve(uds, app).await?;
 
     Ok(())

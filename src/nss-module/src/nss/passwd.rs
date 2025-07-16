@@ -1,6 +1,6 @@
 use crate::api_types::GetentResponse;
-use crate::nss::RauthyNss;
-use crate::{init_syslog, send_getent};
+use crate::init_syslog;
+use crate::{RauthyNss, send_getent};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
 use log::info;
