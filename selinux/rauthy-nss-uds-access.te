@@ -1,0 +1,60 @@
+module rauthy-nss-uds-access 1.0;
+
+require {
+        type auditd_t;
+        type etc_t;
+        type geoclue_t;
+        type init_t;
+        type policykit_auth_t;
+        type policykit_t;
+        type systemd_userdbd_t;
+        type unconfined_service_t;
+        type var_lib_t;
+        type var_run_t;
+        type xdm_t;
+
+        #class file setattr;
+        #class dir setattr;
+        class tcp_socket name_connect;
+        class sock_file write;
+        class unix_stream_socket connectto;
+}
+
+#============= auditd_t ==============
+#allow auditd_t etc_t:file setattr;
+#allow auditd_t var_lib_t:dir setattr;
+allow auditd_t var_run_t:sock_file write;
+allow auditd_t unconfined_service_t:unix_stream_socket connectto;
+
+
+#============= init_t ==============
+#allow init_t http_cache_port_t:tcp_socket name_connect;
+allow init_t unconfined_service_t:unix_stream_socket connectto;
+
+
+#============= systemd_userdbd_t ==============
+allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_userdbd_t var_run_t:sock_file write;
+
+
+#============= geoclue_t ==============
+allow geoclue_t var_run_t:sock_file write;
+
+
+#============= policykit_auth_t ==============
+allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
+allow policykit_auth_t var_run_t:sock_file write;
+
+
+#============= policykit_t ==============
+#allow policykit_t policykit_auth_t:process noatsecure;
+allow policykit_t unconfined_service_t:unix_stream_socket connectto;
+allow policykit_t var_run_t:sock_file write;
+
+
+#============= xdm_t ==============
+# probably only when you use gdm
+#allow xdm_t chkpwd_t:process noatsecure;
+#allow xdm_t etc_t:file setattr;
+#allow xdm_t init_var_lib_t:dir { getattr search };
+allow xdm_t var_run_t:sock_file write;

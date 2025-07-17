@@ -9,9 +9,9 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 #[cfg(debug_assertions)]
-pub static CONFIG_PATH: &str = "./proxy.toml";
+pub static CONFIG_PATH: &str = "./rauthy-pam-nss.toml";
 #[cfg(not(debug_assertions))]
-pub static CONFIG_PATH: &str = "/etc/rauthy/proxy.toml";
+pub static CONFIG_PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -33,7 +33,7 @@ pub struct Config {
     // #[serde(default = "data_path")]
     // pub data_dir: Cow<'static, str>,
     pub log_target: LogTarget,
-    pub danger_allow_unsecure: bool,
+    pub danger_allow_insecure: bool,
     pub workers: usize,
     pub cache_ttl_groups: u32,
     pub cache_ttl_hosts: u32,
@@ -50,7 +50,7 @@ impl Default for Config {
             host_secret: "hostSecretFromRauthy".to_string(),
             // data_dir: data_path(),
             log_target: LogTarget::Syslog,
-            danger_allow_unsecure: false,
+            danger_allow_insecure: false,
             workers: 1,
             cache_ttl_groups: 60,
             cache_ttl_hosts: 60,

@@ -14,7 +14,7 @@ log_target = "console"
 # Not allowing insecure requests in production is probably the most important
 # thing. If an attacker is able to spoof responses from Rauthy, account
 # and server takeover would be super easy. Always encrypt these queries!
-danger_allow_unsecure = true
+danger_allow_insecure = true
 
 # Most servers should be absolutely fine with a single worker.
 # Only when you have a huge amount of conrurent users, you may increase it,

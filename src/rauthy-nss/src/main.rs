@@ -16,8 +16,9 @@ mod utils;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-// TODO change to /run after testing
-// static PROXY_SOCKET: &str = "/tmp/rauthy_proxy.sock";
+#[cfg(debug_assertions)]
+static PROXY_SOCKET: &str = "/tmp/rauthy/rauthy_proxy.sock";
+#[cfg(not(debug_assertions))]
 static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
 pub static RAUTHY_HEALTHY: AtomicBool = AtomicBool::new(false);

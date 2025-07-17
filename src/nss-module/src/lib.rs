@@ -7,8 +7,9 @@ mod api_types;
 mod nss;
 mod uds;
 
-// TODO change to /run after testing
-// static PROXY_SOCKET: &str = "/tmp/rauthy_proxy.sock";
+#[cfg(debug_assertions)]
+static PROXY_SOCKET: &str = "/tmp/rauthy/rauthy_proxy.sock";
+#[cfg(not(debug_assertions))]
 static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
 pub struct RauthyNss;

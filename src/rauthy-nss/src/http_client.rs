@@ -22,7 +22,7 @@ impl HttpClient {
             .use_rustls_tls()
             .user_agent(format!("Rauthy NSS Proxy v{VERSION}"));
 
-        let client = if !Config::get().danger_allow_unsecure {
+        let client = if !Config::get().danger_allow_insecure {
             builder
                 .https_only(true)
                 .danger_accept_invalid_certs(false)

@@ -6,7 +6,7 @@ use crate::http_client::HttpClient;
 use crate::{RAUTHY_HEALTHY, VERSION};
 use axum::body::Body;
 use axum::http::Response;
-use log::{debug, error, info};
+use log::{debug, error};
 use std::sync::atomic::Ordering;
 
 pub mod groups;
@@ -102,7 +102,6 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
             return Err(Error::new(ErrorType::NotFound, "value not found"));
         }
     };
-    info!("Cache miss");
 
     let value = resp.clone();
     match getent {

@@ -71,9 +71,9 @@ apply-selinux ty="local":
         setsebool -P nis_enabled 1
     elif [[ {{ ty }} == "nss" ]]; then
         echo 'Building and applying SELinux rules for NSS lookups'
-        checkmodule -M -m -o pam-rauthy-nss.mod pam-rauthy-nss.te
-        semodule_package -m pam-rauthy-nss.mod -o pam-rauthy-nss.pp
-        sudo semodule -i pam-rauthy-nss.pp
+        checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te
+        semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp
+        sudo semodule -i rauthy-nss-uds-access.pp
     elif [[ {{ ty }} == "ssh" ]]; then
         echo 'Building and applying SELinux rules for ssh login'
         checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te
