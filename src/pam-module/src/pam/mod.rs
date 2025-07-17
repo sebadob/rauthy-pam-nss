@@ -103,13 +103,15 @@ impl PamServiceModule for RauthyPam {
         }
     }
 
-    fn authenticate(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
+    fn authenticate(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
         let username = get_nonlocal_username!(&pamh);
+        let password_mode = args.iter().any(|a| a == "password");
+
         println!("authenticate username: {username}");
 
         debug(&pamh, "authenticate");
 
-        match Self::handle_authenticate(&pamh, username) {
+        match Self::handle_authenticate(&pamh, username, password_mode) {
             Ok(_) => PamError::SUCCESS,
             Err(err) => {
                 sys_err(&pamh, &format!("Rauthy PAM login failed with {err}"));

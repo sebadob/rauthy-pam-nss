@@ -126,7 +126,11 @@ impl RauthyPam {
         }
     }
 
-    pub fn handle_authenticate(pamh: &Pam, username: &str) -> Result<(), PamError> {
+    pub fn handle_authenticate(
+        pamh: &Pam,
+        username: &str,
+        password_mode: bool,
+    ) -> Result<(), PamError> {
         // sys_info(pamh, &format!("RauthyPam - login trying user {username}"));
 
         let config = Config::load_create(pamh)?;
@@ -174,7 +178,14 @@ impl RauthyPam {
                 }
             }
         } else {
-            let password = match pamh.get_authtok(Some("Password: ")) {
+            // TODO just to see if we can forward this properly in a different mode
+            sys_info(pamh, "Password-only PAM auth request");
+            let prompt = if password_mode {
+                "Password (OTP): "
+            } else {
+                "Password: "
+            };
+            let password = match pamh.get_authtok(Some(prompt)) {
                 Ok(Some(p)) => p.to_str().unwrap(),
                 Ok(None) => {
                     sys_err(pamh, "No password provided");

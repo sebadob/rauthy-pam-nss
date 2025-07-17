@@ -8,17 +8,19 @@ require {
         type policykit_auth_t;
         type policykit_t;
         type systemd_userdbd_t;
+        type systemd_user_runtimedir_t;
         type unconfined_service_t;
         type var_lib_t;
         type var_run_t;
         type xdm_t;
 
         #class file setattr;
-        #class dir setattr;
+        class dir { read setattr write };
         class tcp_socket name_connect;
         class sock_file write;
         class unix_stream_socket connectto;
 }
+
 
 #============= auditd_t ==============
 #allow auditd_t etc_t:file setattr;
@@ -39,6 +41,7 @@ allow systemd_userdbd_t var_run_t:sock_file write;
 
 #============= geoclue_t ==============
 allow geoclue_t var_run_t:sock_file write;
+allow geoclue_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= policykit_auth_t ==============
@@ -50,6 +53,19 @@ allow policykit_auth_t var_run_t:sock_file write;
 #allow policykit_t policykit_auth_t:process noatsecure;
 allow policykit_t unconfined_service_t:unix_stream_socket connectto;
 allow policykit_t var_run_t:sock_file write;
+
+
+#============= systemd_user_runtimedir_t ==============
+
+#allow systemd_user_runtimedir_t config_home_t:dir read;
+#allow systemd_user_runtimedir_t config_home_t:file unlink;
+#allow systemd_user_runtimedir_t devlog_t:lnk_file read;
+#allow systemd_user_runtimedir_t devlog_t:sock_file write;
+#allow systemd_user_runtimedir_t etc_t:file setattr;
+#allow systemd_user_runtimedir_t self:capability net_admin;
+allow systemd_user_runtimedir_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_user_runtimedir_t var_lib_t:dir setattr;
+allow systemd_user_runtimedir_t var_run_t:sock_file write;
 
 
 #============= xdm_t ==============

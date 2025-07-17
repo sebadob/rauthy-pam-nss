@@ -18,10 +18,11 @@ Non-exhaustive list of features:
     - [x] `getent group`
     - [x] `getent group <groupname>`
     - [x] `getent group <group_id>`
-- [x] NSS module to resolve non-local hosts (`getent hosts`) - currently a bit weird / unstable in behavior, even
-  though the functions are implemented and working properly. This is probably a config issue.
+- [x] NSS module to resolve non-local hosts (`getent hosts`)
     - [x] `getent hosts`
-    - [ ] `getent hosts <hostname>`
+    - [x] `getent hosts <hostname>` - Note: The module finds and returns the correct data, but `getent` e.g. does not
+      display it for some reason. However, when I create a host named `batman` and then `ping batman`, even though
+      `getent hosts batman` does not print the output, the `ping` command resolves it properly.
     - [x] `getent hosts <host_ip>`
 - [x] Local Login with Password without local user -> resolved via NSS module
 - [x] Local login with Yubikey without local user -> resolved via NSS module

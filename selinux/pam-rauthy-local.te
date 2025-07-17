@@ -2,6 +2,7 @@
 module pam-rauthy-local 1.0;
 
 require {
+	type chkpwd_t;
 	type etc_t;
 	type home_root_t;
 	type local_login_t;
@@ -19,6 +20,15 @@ require {
 	class unix_stream_socket connectto;
 
 }
+
+
+#============= chkpwd_t ==============
+allow chkpwd_t etc_t:file setattr;
+#allow chkpwd_t self:capability { fsetid setgid };
+allow chkpwd_t unconfined_service_t:unix_stream_socket connectto;
+allow chkpwd_t var_lib_t:dir setattr;
+allow chkpwd_t var_run_t:sock_file write;
+
 
 #============= local_login_t ==============
 allow local_login_t etc_t:file setattr;
