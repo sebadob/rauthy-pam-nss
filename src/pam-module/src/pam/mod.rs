@@ -84,6 +84,34 @@ impl RauthyPam {
         }
         false
     }
+
+    // #[inline]
+    // fn is_ssh_session(pamh: &Pam) -> bool {
+    //     let client = pamh.getenv("SSH_CLIENT").unwrap_or_default();
+    //     let tty = pamh.getenv("SSH_TTY").unwrap_or_default();
+    //     client.is_some() || tty.is_some()
+    // }
+
+    #[inline]
+    fn is_ssh_service(pamh: &Pam) -> bool {
+        // let svc = pamh
+        //     .get_service()
+        //     .unwrap_or_default()
+        //     .map(|s| s.to_str().unwrap_or_default())
+        //     == Some("sshd");
+
+        match pamh.get_service() {
+            Ok(v) => {
+                let svc = v.unwrap_or_default().to_str().unwrap_or_default();
+                sys_info(pamh, &format!("Service detected: {svc}"));
+                svc == "sshd"
+            }
+            Err(err) => {
+                sys_err(pamh, &format!("Cannot read service: {err:?}"));
+                false
+            }
+        }
+    }
 }
 
 impl PamServiceModule for RauthyPam {
@@ -103,15 +131,15 @@ impl PamServiceModule for RauthyPam {
         }
     }
 
-    fn authenticate(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
+    fn authenticate(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
         let username = get_nonlocal_username!(&pamh);
-        let password_mode = args.iter().any(|a| a == "password");
+        // let password_mode = args.iter().any(|a| a == "password");
 
         println!("authenticate username: {username}");
 
         debug(&pamh, "authenticate");
 
-        match Self::handle_authenticate(&pamh, username, password_mode) {
+        match Self::handle_authenticate(&pamh, username) {
             Ok(_) => PamError::SUCCESS,
             Err(err) => {
                 sys_err(&pamh, &format!("Rauthy PAM login failed with {err}"));

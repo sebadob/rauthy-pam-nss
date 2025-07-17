@@ -26,45 +26,45 @@ pub async fn get_root() -> String {
 async fn fetch_getent(getent: Getent) -> ApiResponse {
     let (cached, cache_key) = match &getent {
         Getent::Users => {
-            let cached = Cache::get(CACHE_KEY_USERS);
+            let cached = Cache::get(CACHE_KEY_USERS.to_string()).await;
             (cached, CACHE_KEY_USERS.to_string())
         }
         Getent::Username(username) => {
             let key = format!("u_{username}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.clone()).await;
             (cached, key)
         }
         Getent::UserId(uid) => {
             let key = format!("u_{uid}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.clone()).await;
             (cached, key)
         }
         Getent::Groups => {
-            let cached = Cache::get(CACHE_KEY_GROUPS);
+            let cached = Cache::get(CACHE_KEY_GROUPS.to_string()).await;
             (cached, CACHE_KEY_GROUPS.to_string())
         }
         Getent::Groupname(groupname) => {
             let key = format!("g_{groupname}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }
         Getent::GroupId(gid) => {
             let key = format!("g_{gid}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }
         Getent::Hosts => {
-            let cached = Cache::get(CACHE_KEY_HOSTS);
+            let cached = Cache::get(CACHE_KEY_HOSTS.to_string()).await;
             (cached, CACHE_KEY_HOSTS.to_string())
         }
         Getent::Hostname(hostname) => {
             let key = format!("h_{hostname}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }
         Getent::HostIp(ip) => {
             let key = format!("h_{ip}");
-            let cached = Cache::get(&key);
+            let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }
     };
@@ -98,23 +98,18 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         Ok(r) => r,
         Err(err) => {
             error!("Rauthy Connection Error: {err:?}");
-            Cache::set(cache_key, None, 10);
+            // Cache::set(cache_key, None, 10);
             return Err(Error::new(ErrorType::NotFound, "value not found"));
         }
     };
 
     let value = resp.clone();
-    match getent {
-        Getent::Users | Getent::UserId(_) | Getent::Username(_) => {
-            Cache::set(cache_key, value, config.cache_ttl_users)
-        }
-        Getent::Groups | Getent::GroupId(_) | Getent::Groupname(_) => {
-            Cache::set(cache_key, value, config.cache_ttl_groups)
-        }
-        Getent::Hosts | Getent::Hostname(_) | Getent::HostIp(_) => {
-            Cache::set(cache_key, value, config.cache_ttl_hosts)
-        }
+    let ttl = match getent {
+        Getent::Users | Getent::UserId(_) | Getent::Username(_) => config.cache_ttl_users,
+        Getent::Groups | Getent::GroupId(_) | Getent::Groupname(_) => config.cache_ttl_groups,
+        Getent::Hosts | Getent::Hostname(_) | Getent::HostIp(_) => config.cache_ttl_hosts,
     };
+    Cache::set(cache_key, value, ttl).await;
 
     match resp {
         None => Err(Error::new(ErrorType::NotFound, "value not found")),

@@ -2,6 +2,7 @@ module rauthy-nss-uds-access 1.0;
 
 require {
         type auditd_t;
+        type devlog_t;
         type etc_t;
         type geoclue_t;
         type init_t;
@@ -16,6 +17,7 @@ require {
 
         #class file setattr;
         class dir { read setattr write };
+        class lnk_file read;
         class tcp_socket name_connect;
         class sock_file write;
         class unix_stream_socket connectto;
@@ -59,8 +61,8 @@ allow policykit_t var_run_t:sock_file write;
 
 #allow systemd_user_runtimedir_t config_home_t:dir read;
 #allow systemd_user_runtimedir_t config_home_t:file unlink;
-#allow systemd_user_runtimedir_t devlog_t:lnk_file read;
-#allow systemd_user_runtimedir_t devlog_t:sock_file write;
+allow systemd_user_runtimedir_t devlog_t:lnk_file read;
+allow systemd_user_runtimedir_t devlog_t:sock_file write;
 #allow systemd_user_runtimedir_t etc_t:file setattr;
 #allow systemd_user_runtimedir_t self:capability net_admin;
 allow systemd_user_runtimedir_t unconfined_service_t:unix_stream_socket connectto;

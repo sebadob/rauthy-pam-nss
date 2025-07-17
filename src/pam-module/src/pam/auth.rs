@@ -126,11 +126,7 @@ impl RauthyPam {
         }
     }
 
-    pub fn handle_authenticate(
-        pamh: &Pam,
-        username: &str,
-        password_mode: bool,
-    ) -> Result<(), PamError> {
+    pub fn handle_authenticate(pamh: &Pam, username: &str) -> Result<(), PamError> {
         // sys_info(pamh, &format!("RauthyPam - login trying user {username}"));
 
         let config = Config::load_create(pamh)?;
@@ -141,6 +137,12 @@ impl RauthyPam {
         // {
         //     return Ok(());
         // }
+
+        let is_ssh = Self::is_ssh_service(pamh);
+        // TODO just for testing right now
+        if is_ssh {
+            sys_info(pamh, "Detected SSH session");
+        }
 
         let preflight = match RT.block_on(Self::preflight(
             config.url.clone(),
@@ -178,14 +180,7 @@ impl RauthyPam {
                 }
             }
         } else {
-            // TODO just to see if we can forward this properly in a different mode
-            sys_info(pamh, "Password-only PAM auth request");
-            let prompt = if password_mode {
-                "Password (OTP): "
-            } else {
-                "Password: "
-            };
-            let password = match pamh.get_authtok(Some(prompt)) {
+            let password = match pamh.get_authtok(Some("Password: ")) {
                 Ok(Some(p)) => p.to_str().unwrap(),
                 Ok(None) => {
                     sys_err(pamh, "No password provided");

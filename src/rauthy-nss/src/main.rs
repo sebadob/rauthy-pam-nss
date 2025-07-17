@@ -30,6 +30,7 @@ fn main() -> anyhow::Result<()> {
     info!("Rauthy NSS Proxy v{VERSION}");
     info!("Using config file from {CONFIG_PATH}");
 
+    Cache::init();
     http_client::HttpClient::init();
 
     let workers = Config::get().workers;
@@ -43,7 +44,7 @@ fn main() -> anyhow::Result<()> {
     .build()?;
 
     rt.block_on(async {
-        Cache::init();
+        Cache::spawn_ticker();
 
         health_check::wait_until_healthy().await;
         health_check::spawn_health_checker();
