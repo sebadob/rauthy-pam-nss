@@ -147,8 +147,6 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         None
     };
 
-    // TODO in case we fetched a group, we need to deserialize the response and check if we need
-    //  to do a local group mapping
     let ttl = match getent {
         Getent::Users | Getent::UserId(_) | Getent::Username(_) => config.cache_ttl_users,
         Getent::Groups | Getent::GroupId(_) | Getent::Groupname(_) => config.cache_ttl_groups,
