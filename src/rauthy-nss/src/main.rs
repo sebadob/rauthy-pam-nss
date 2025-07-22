@@ -7,6 +7,7 @@ mod api_types;
 mod cache;
 mod config;
 mod error;
+mod groups_local;
 mod handler;
 mod health_check;
 mod http_client;

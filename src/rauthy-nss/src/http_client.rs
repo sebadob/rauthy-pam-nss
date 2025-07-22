@@ -2,8 +2,7 @@ use crate::VERSION;
 use crate::api_types::{Getent, GetentRequest, GetentResponse};
 use crate::config::Config;
 use crate::error::Error;
-use crate::utils::serialize;
-use log::{debug, error};
+use log::error;
 use reqwest::tls::Version;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -42,7 +41,7 @@ impl HttpClient {
     }
 
     #[inline]
-    pub async fn getent(getent: &Getent) -> Result<Option<Vec<u8>>, Error> {
+    pub async fn getent(getent: &Getent) -> Result<Option<GetentResponse>, Error> {
         // TODO impl and check local cache first
 
         let config = Config::get();
@@ -64,9 +63,7 @@ impl HttpClient {
 
         if res.status().is_success() {
             let resp = res.json::<GetentResponse>().await?;
-            debug!("{resp:?}");
-            let bytes = serialize(&resp)?;
-            Ok(Some(bytes))
+            Ok(Some(resp))
         } else {
             // let msg = res.text().await?;
             // error!("{msg}");

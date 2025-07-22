@@ -1,12 +1,14 @@
-use crate::api_types::Getent;
+use crate::api_types::{Getent, GetentResponse, PamGroupType};
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::error::{Error, ErrorType};
+use crate::groups_local::GroupLocal;
 use crate::http_client::HttpClient;
+use crate::utils::serialize;
 use crate::{RAUTHY_HEALTHY, VERSION};
 use axum::body::Body;
 use axum::http::Response;
-use log::{debug, error};
+use log::{debug, error, info, warn};
 use std::sync::atomic::Ordering;
 
 pub mod groups;
@@ -98,20 +100,63 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         Ok(r) => r,
         Err(err) => {
             error!("Rauthy Connection Error: {err:?}");
-            // Cache::set(cache_key, None, 10);
+            Cache::set(cache_key, None, 10).await;
             return Err(Error::new(ErrorType::NotFound, "value not found"));
         }
     };
 
-    let value = resp.clone();
+    let bytes = if let Some(resp) = resp {
+        let resp = match resp {
+            GetentResponse::Users(r) => GetentResponse::Users(r),
+            GetentResponse::User(r) => GetentResponse::User(r),
+            GetentResponse::Groups(mut groups) => {
+                if let Some(locals) = GroupLocal::read().await? {
+                    for group in groups.iter_mut() {
+                        if group.typ == PamGroupType::Local {
+                            match locals.get(&group.name) {
+                                None => {
+                                    warn!("Local Group {} not found", group.name);
+                                }
+                                Some(local) => {
+                                    info!(
+                                        "Local Group {} found with id {} - replacing it",
+                                        group.name, local.id
+                                    );
+                                    group.id = local.id;
+                                }
+                            }
+                        }
+                    }
+                }
+                GetentResponse::Groups(groups)
+            }
+            GetentResponse::Group(mut group) => {
+                if group.typ == PamGroupType::Local
+                    && let Some(local) = GroupLocal::read_id(&group.name).await?
+                {
+                    group.id = local.id;
+                }
+                GetentResponse::Group(group)
+            }
+            GetentResponse::Hosts(g) => GetentResponse::Hosts(g),
+            GetentResponse::Host(g) => GetentResponse::Host(g),
+        };
+
+        Some(serialize(&resp)?)
+    } else {
+        None
+    };
+
+    // TODO in case we fetched a group, we need to deserialize the response and check if we need
+    //  to do a local group mapping
     let ttl = match getent {
         Getent::Users | Getent::UserId(_) | Getent::Username(_) => config.cache_ttl_users,
         Getent::Groups | Getent::GroupId(_) | Getent::Groupname(_) => config.cache_ttl_groups,
         Getent::Hosts | Getent::Hostname(_) | Getent::HostIp(_) => config.cache_ttl_hosts,
     };
-    Cache::set(cache_key, value, ttl).await;
+    Cache::set(cache_key, bytes.clone(), ttl).await;
 
-    match resp {
+    match bytes {
         None => Err(Error::new(ErrorType::NotFound, "value not found")),
         Some(value) => Ok(Response::builder()
             .status(200)

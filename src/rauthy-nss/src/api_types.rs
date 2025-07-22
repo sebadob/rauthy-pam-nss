@@ -90,11 +90,21 @@ pub struct HostResponse {
     pub addresses: Vec<IpAddr>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PamGroupType {
+    Immutable,
+    Host,
+    User,
+    Generic,
+    Local,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GroupResponse {
     pub id: u32,
     pub name: String,
-    // Vec<{username}>
+    pub typ: PamGroupType,
     pub members: Vec<String>,
 }
 

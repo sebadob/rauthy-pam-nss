@@ -14,17 +14,17 @@ where
     })
 }
 
-// #[inline]
-// pub fn deserialize<T>(value: &[u8]) -> Result<T, Error>
-// where
-//     T: Debug + serde::de::DeserializeOwned,
-// {
-//     let (bytes, _) = bincode::serde::decode_from_slice(value, bincode::config::standard())
-//         .map_err(|err| {
-//             Error::new(
-//                 ErrorType::Internal,
-//                 format!("Cannot deserialize value: {:?}", err),
-//             )
-//         })?;
-//     Ok(bytes)
-// }
+#[inline]
+pub fn deserialize<T>(value: &[u8]) -> Result<T, Error>
+where
+    T: Debug + serde::de::DeserializeOwned,
+{
+    let (bytes, _) = bincode::serde::decode_from_slice(value, bincode::config::standard())
+        .map_err(|err| {
+            Error::new(
+                ErrorType::Internal,
+                format!("Cannot deserialize value: {err:?}"),
+            )
+        })?;
+    Ok(bytes)
+}

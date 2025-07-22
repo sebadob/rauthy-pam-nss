@@ -11,10 +11,19 @@ pub struct HostResponse {
 }
 
 #[derive(Debug, Decode)]
+pub enum PamGroupType {
+    Immutable,
+    Host,
+    User,
+    Generic,
+    Local,
+}
+
+#[derive(Debug, Decode)]
 pub struct GroupResponse {
     pub id: u32,
     pub name: String,
-    // Vec<{username}>
+    pub _typ: PamGroupType,
     pub members: Vec<String>,
 }
 
