@@ -18,6 +18,8 @@ Non-exhaustive list of features:
     - [x] `getent group`
     - [x] `getent group <groupname>`
     - [x] `getent group <group_id>`
+    - [x] merged groups - Rauthy can manage groups with type `local` which it then will map to a locally
+      existing `gid`, which again can be merged with proper config in `/etc/nsswitch.conf`
 - [x] NSS module to resolve non-local hosts (`getent hosts`)
     - [x] `getent hosts`
     - [x] `getent hosts <hostname>` - Note: The module finds and returns the correct data, but `getent` e.g. does not
