@@ -28,13 +28,12 @@ Non-exhaustive list of features:
 - [x] Local login with Yubikey without local user -> resolved via NSS module
 - [x] `su - <rauthy_user>` with Password (on a local host)
 - [x] `su - <rauthy_user>` with Yubikey (on a local host)
-- [x] `su - <rauthy_user>` with Password (on a remote host)
-- [ ] `su - <rauthy_user>` with Yubikey (on a remote host)
+- [x] `su - <rauthy_user>` on a remote host - works for both password and MFA accounts via the
+  new PAM passwords from the account dashboard
 - [x] ssh into a host with a non-existent, Rauthy-managed user with Password
 - [x] ssh into a host with a non-existent, Rauthy-managed user with online Passkey validation
 - [x] `sudo` on remote host via SSH session - can be achieved by adding `%wheel-rauthy   ALL=(ALL)   ALL`
   to `/etc/sudoers`
-- [ ] `su` on remote host via SSH session
 - [ ] Login to window managers like `gdm` or `sddm`
 
 On the Rauthy side, a lot of updates are necessary as well of course. I currently
