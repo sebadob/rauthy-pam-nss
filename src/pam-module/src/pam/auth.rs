@@ -146,7 +146,7 @@ impl RauthyPam {
         let is_remote_user = matches!(svc, PamService::Sudo | PamService::Su);
         // During SSH login, this will be false.
         // Only true AFTER an SSH session ahs been created
-        let is_ssh_session = Self::is_ssh_session();
+        let is_ssh_session = Self::is_remote_session();
         let is_ssh_login = Self::get_service(pamh) == PamService::Ssh;
 
         sys_info(

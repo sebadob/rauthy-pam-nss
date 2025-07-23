@@ -5,6 +5,7 @@ use std::time::Duration;
 
 mod api_types;
 mod config;
+mod constants;
 mod pam;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");

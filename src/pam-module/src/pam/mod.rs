@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::constants::{ENV_SESSION, ENV_USER_EMAIL, ENV_USER_ID, ENV_USERNAME};
 use crate::pam::token::PamToken;
 use pamsm::{LogLvl, Pam, PamError, PamFlags, PamLibExt, PamServiceModule};
 use std::{env, fs};
@@ -96,11 +97,9 @@ impl RauthyPam {
     }
 
     #[inline]
-    fn is_ssh_session() -> bool {
+    fn is_remote_session() -> bool {
         dotenvy::dotenv().ok();
-        env::vars()
-            .into_iter()
-            .any(|(k, _)| k == "SSH_CONNECTION" || k == "SSH_CLIENT" || k == "SSH_TTY")
+        env::vars().any(|(k, v)| k == ENV_SESSION && v == "remote")
     }
 
     #[inline]
@@ -195,6 +194,21 @@ impl PamServiceModule for RauthyPam {
         // TODO accept an args to live-validate the token
         if let Some(token) = token {
             token.create_home_dir();
+
+            let session_typ = if Self::get_service(&pamh) == PamService::Ssh {
+                "remote"
+            } else {
+                "local"
+            };
+            pamh.putenv(&format!("{ENV_SESSION}={session_typ}"))
+                .unwrap();
+            pamh.putenv(&format!("{ENV_USER_ID}={}", token.user_id))
+                .unwrap();
+            pamh.putenv(&format!("{ENV_USER_EMAIL}={}", token.user_email))
+                .unwrap();
+            pamh.putenv(&format!("{ENV_USERNAME}={}", token.username))
+                .unwrap();
+
             PamError::SUCCESS
         } else {
             eprintln!("No token in open session");
