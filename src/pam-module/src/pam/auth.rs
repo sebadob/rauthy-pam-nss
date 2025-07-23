@@ -144,9 +144,9 @@ impl RauthyPam {
 
         // TODO
         let is_remote_user = matches!(svc, PamService::Sudo | PamService::Su);
-        // TODO during SSH login, this will be false.
-        //  Only true AFTER an SSH session ahs been created
-        let is_ssh_session = Self::is_ssh_session(pamh);
+        // During SSH login, this will be false.
+        // Only true AFTER an SSH session ahs been created
+        let is_ssh_session = Self::is_ssh_session();
         let is_ssh_login = Self::get_service(pamh) == PamService::Ssh;
 
         sys_info(
@@ -182,7 +182,7 @@ impl RauthyPam {
             webauthn_code: None,
         };
 
-        if preflight.mfa_required && !is_ssh_login {
+        if preflight.mfa_required && !is_ssh_login && !is_ssh_session {
             match RT.block_on(Self::mfa(config.rauthy_url.clone(), username.to_string())) {
                 Ok(webauthn_code) => {
                     login_req.webauthn_code = Some(webauthn_code);

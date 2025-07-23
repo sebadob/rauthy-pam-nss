@@ -19,6 +19,7 @@ axum = { version = "0.8", features = ["http2", "macros"] }
 anyhow = "1.0.98"
 bincode = { version = "2", features = ["serde"] }
 chrono = "0.4.41"
+dotenvy = "0.15.7"
 flume = "0.11"
 http-body-util = "0.1"
 hyper = { version = "1.6", features = ["full"] }

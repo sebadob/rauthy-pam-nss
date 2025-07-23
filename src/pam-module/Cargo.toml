@@ -13,6 +13,7 @@ crate-type = ["cdylib"]
 anyhow.workspace = true
 bincode.workspace = true
 chrono.workspace = true
+dotenvy.workspace = true
 pamsm.workspace = true
 reqwest.workspace = true
 serde.workspace = true

@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::pam::token::PamToken;
 use pamsm::{LogLvl, Pam, PamError, PamFlags, PamLibExt, PamServiceModule};
-use std::fs;
+use std::{env, fs};
 
 mod auth;
 pub mod token;
@@ -72,6 +72,7 @@ macro_rules! get_nonlocal_r_username {
 
 #[derive(Debug, PartialEq)]
 pub enum PamService {
+    Login,
     Ssh,
     Sudo,
     Su,
@@ -95,10 +96,11 @@ impl RauthyPam {
     }
 
     #[inline]
-    fn is_ssh_session(pamh: &Pam) -> bool {
-        let client = pamh.getenv("SSH_CLIENT").unwrap_or_default();
-        let tty = pamh.getenv("SSH_TTY").unwrap_or_default();
-        client.is_some() || tty.is_some()
+    fn is_ssh_session() -> bool {
+        dotenvy::dotenv().ok();
+        env::vars()
+            .into_iter()
+            .any(|(k, _)| k == "SSH_CONNECTION" || k == "SSH_CLIENT" || k == "SSH_TTY")
     }
 
     #[inline]
@@ -108,7 +110,8 @@ impl RauthyPam {
                 let svc = v.unwrap_or_default().to_str().unwrap_or_default();
                 sys_info(pamh, &format!("Service detected: {svc}"));
 
-                match svc {
+                match svc.to_lowercase().as_str() {
+                    "login" => PamService::Login,
                     "sshd" => PamService::Ssh,
                     "sudo" => PamService::Sudo,
                     "su" => PamService::Su,
