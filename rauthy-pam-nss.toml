@@ -34,3 +34,8 @@ cache_ttl_users = 5
 #
 # default: 900
 cache_flush_interval = 900
+
+# The data path where short-lived login tokens will be stored.
+#
+# default: '/var/lib/pam_rauthy'
+#data_path = '/var/lib/pam_rauthy'

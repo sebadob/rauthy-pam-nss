@@ -9,11 +9,12 @@ use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
 
 // TODO change path + data to the same location as the proxy to re-use it
-static PATH: &str = "/etc/security/pam_rauthy.toml";
+static PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
+// static PATH: &str = "/etc/security/pam_rauthy.toml";
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub url: Url,
+    pub rauthy_url: Url,
     pub host_id: String,
     pub host_secret: String,
     #[serde(default = "data_path")]

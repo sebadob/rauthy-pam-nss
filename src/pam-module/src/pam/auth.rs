@@ -4,7 +4,7 @@ use crate::api_types::{
 };
 use crate::config::Config;
 use crate::pam::token::PamToken;
-use crate::pam::{RauthyPam, sys_err, sys_info};
+use crate::pam::{PamService, RauthyPam, sys_err, sys_info};
 use crate::{CLIENT, RT};
 use pamsm::{Pam, PamError, PamLibExt};
 use reqwest::Url;
@@ -126,7 +126,11 @@ impl RauthyPam {
         }
     }
 
-    pub fn handle_authenticate(pamh: &Pam, username: &str) -> Result<(), PamError> {
+    pub fn handle_authenticate(
+        pamh: &Pam,
+        username: &str,
+        svc: PamService,
+    ) -> Result<(), PamError> {
         // sys_info(pamh, &format!("RauthyPam - login trying user {username}"));
 
         let config = Config::load_create(pamh)?;
@@ -138,14 +142,22 @@ impl RauthyPam {
         //     return Ok(());
         // }
 
-        let is_ssh = Self::is_ssh_service(pamh);
-        // TODO just for testing right now
-        if is_ssh {
-            sys_info(pamh, "Detected SSH session");
-        }
+        // TODO
+        let is_remote_user = matches!(svc, PamService::Sudo | PamService::Su);
+        // TODO during SSH login, this will be false.
+        //  Only true AFTER an SSH session ahs been created
+        let is_ssh_session = Self::is_ssh_session(pamh);
+        let is_ssh_login = Self::get_service(pamh) == PamService::Ssh;
+
+        sys_info(
+            pamh,
+            &format!(
+                "is_remote_user: {is_remote_user}, is_ssh_login: {is_ssh_login}, is_ssh_session: {is_ssh_session}"
+            ),
+        );
 
         let preflight = match RT.block_on(Self::preflight(
-            config.url.clone(),
+            config.rauthy_url.clone(),
             config.host_id.clone(),
             config.host_secret.clone(),
             username.to_string(),
@@ -166,11 +178,12 @@ impl RauthyPam {
             host_secret: config.host_secret.clone(),
             username: username.to_string(),
             password: None,
+            remote_password: None,
             webauthn_code: None,
         };
 
-        if preflight.mfa_required {
-            match RT.block_on(Self::mfa(config.url.clone(), username.to_string())) {
+        if preflight.mfa_required && !is_ssh_login {
+            match RT.block_on(Self::mfa(config.rauthy_url.clone(), username.to_string())) {
                 Ok(webauthn_code) => {
                     login_req.webauthn_code = Some(webauthn_code);
                 }
@@ -180,8 +193,13 @@ impl RauthyPam {
                 }
             }
         } else {
-            let password = match pamh.get_authtok(Some("Password: ")) {
-                Ok(Some(p)) => p.to_str().unwrap(),
+            let text = if is_ssh_login || is_ssh_session {
+                "Remote PAM Password: "
+            } else {
+                "Password: "
+            };
+            let password = match pamh.get_authtok(Some(text)) {
+                Ok(Some(p)) => p.to_str().unwrap().to_string(),
                 Ok(None) => {
                     sys_err(pamh, "No password provided");
                     return Err(PamError::AUTHINFO_UNAVAIL);
@@ -195,11 +213,14 @@ impl RauthyPam {
             //     pamh,
             //     &format!("RauthyPam - login trying user {username} with passwrod {password}"),
             // );
-
-            login_req.password = Some(password.to_string());
+            if is_ssh_login || is_ssh_session {
+                login_req.remote_password = Some(password)
+            } else {
+                login_req.password = Some(password);
+            }
         };
 
-        match RT.block_on(Self::send_login(config.url.clone(), login_req)) {
+        match RT.block_on(Self::send_login(config.rauthy_url.clone(), login_req)) {
             Ok(token) => {
                 let msg = if preflight.mfa_required {
                     format!("Rauthy PAM MFA Login successful for user {username}")

@@ -10,6 +10,8 @@ require {
         type policykit_t;
         type systemd_userdbd_t;
         type systemd_user_runtimedir_t;
+        type systemd_tmpfiles_t;
+        type unconfined_t;
         type unconfined_service_t;
         type var_lib_t;
         type var_run_t;
@@ -68,6 +70,10 @@ allow systemd_user_runtimedir_t devlog_t:sock_file write;
 allow systemd_user_runtimedir_t unconfined_service_t:unix_stream_socket connectto;
 allow systemd_user_runtimedir_t var_lib_t:dir setattr;
 allow systemd_user_runtimedir_t var_run_t:sock_file write;
+
+
+#============= systemd_tmpfiles_t ==============
+allow systemd_tmpfiles_t unconfined_t:unix_stream_socket connectto;
 
 
 #============= xdm_t ==============

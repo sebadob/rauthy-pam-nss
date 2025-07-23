@@ -6,6 +6,7 @@ pub struct PamLoginRequest {
     pub host_secret: String,
     pub username: String,
     pub password: Option<String>,
+    pub remote_password: Option<String>,
     pub webauthn_code: Option<String>,
 }
 

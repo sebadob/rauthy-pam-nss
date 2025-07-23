@@ -49,26 +49,35 @@ macro_rules! get_nonlocal_username {
     }};
 }
 
-// macro_rules! get_nonlocal_r_username {
-//     ($pamh:expr) => {{
-//         let username = match $pamh.get_ruser() {
-//             Ok(Some(u)) => u.to_str().unwrap(),
-//             Ok(None) => return PamError::AUTH_ERR,
-//             Err(err) => return err,
-//         };
-//         let username = if username.len() >= 2 {
-//             username
-//         } else {
-//             return PamError::CRED_UNAVAIL;
-//         };
-//
-//         if RauthyPam::is_local_user(username) {
-//             return PamError::CRED_UNAVAIL;
-//         }
-//
-//         username
-//     }};
-// }
+macro_rules! get_nonlocal_r_username {
+    ($pamh:expr) => {{
+        let username = match $pamh.get_ruser() {
+            Ok(Some(u)) => u.to_str().unwrap(),
+            Ok(None) => return PamError::AUTH_ERR,
+            Err(err) => return err,
+        };
+        let username = if username.len() >= 2 {
+            username
+        } else {
+            return PamError::CRED_UNAVAIL;
+        };
+
+        if RauthyPam::is_local_user(username) {
+            return PamError::CRED_UNAVAIL;
+        }
+
+        username
+    }};
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PamService {
+    Ssh,
+    Sudo,
+    Su,
+    Other,
+    Unknown,
+}
 
 pub struct RauthyPam;
 
@@ -85,30 +94,30 @@ impl RauthyPam {
         false
     }
 
-    // #[inline]
-    // fn is_ssh_session(pamh: &Pam) -> bool {
-    //     let client = pamh.getenv("SSH_CLIENT").unwrap_or_default();
-    //     let tty = pamh.getenv("SSH_TTY").unwrap_or_default();
-    //     client.is_some() || tty.is_some()
-    // }
+    #[inline]
+    fn is_ssh_session(pamh: &Pam) -> bool {
+        let client = pamh.getenv("SSH_CLIENT").unwrap_or_default();
+        let tty = pamh.getenv("SSH_TTY").unwrap_or_default();
+        client.is_some() || tty.is_some()
+    }
 
     #[inline]
-    fn is_ssh_service(pamh: &Pam) -> bool {
-        // let svc = pamh
-        //     .get_service()
-        //     .unwrap_or_default()
-        //     .map(|s| s.to_str().unwrap_or_default())
-        //     == Some("sshd");
-
+    fn get_service(pamh: &Pam) -> PamService {
         match pamh.get_service() {
             Ok(v) => {
                 let svc = v.unwrap_or_default().to_str().unwrap_or_default();
                 sys_info(pamh, &format!("Service detected: {svc}"));
-                svc == "sshd"
+
+                match svc {
+                    "sshd" => PamService::Ssh,
+                    "sudo" => PamService::Sudo,
+                    "su" => PamService::Su,
+                    _ => PamService::Other,
+                }
             }
             Err(err) => {
                 sys_err(pamh, &format!("Cannot read service: {err:?}"));
-                false
+                PamService::Unknown
             }
         }
     }
@@ -118,9 +127,13 @@ impl PamServiceModule for RauthyPam {
     fn acct_mgmt(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
         debug(&pamh, "acct_mgmt");
 
-        let username = get_nonlocal_username!(&pamh);
+        let svc = Self::get_service(&pamh);
+        let username = if matches!(svc, PamService::Sudo | PamService::Su) {
+            get_nonlocal_r_username!(&pamh)
+        } else {
+            get_nonlocal_username!(&pamh)
+        };
         let (config, token) = load_config_token!(&pamh, username);
-        // println!("token {token:?}");
 
         if let Some(token) = token
             && token.validate(&config).is_ok()
@@ -132,14 +145,17 @@ impl PamServiceModule for RauthyPam {
     }
 
     fn authenticate(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
-        let username = get_nonlocal_username!(&pamh);
-        // let password_mode = args.iter().any(|a| a == "password");
-
+        let svc = Self::get_service(&pamh);
+        let username = if matches!(svc, PamService::Sudo | PamService::Su) {
+            get_nonlocal_r_username!(&pamh)
+        } else {
+            get_nonlocal_username!(&pamh)
+        };
         println!("authenticate username: {username}");
 
         debug(&pamh, "authenticate");
 
-        match Self::handle_authenticate(&pamh, username) {
+        match Self::handle_authenticate(&pamh, username, svc) {
             Ok(_) => PamError::SUCCESS,
             Err(err) => {
                 sys_err(&pamh, &format!("Rauthy PAM login failed with {err}"));
@@ -211,8 +227,7 @@ fn debug(pamh: &Pam, module: &str) {
         .unwrap_or_default();
     let sc = cstr_cached.to_str().unwrap_or_default();
 
-    let svc = pamh.get_service().unwrap_or_default().unwrap_or_default();
-    let svc_s = svc.to_str().unwrap_or_default();
+    let svc = RauthyPam::get_service(pamh);
 
     let rhost = pamh.get_rhost().unwrap_or_default().unwrap_or_default();
     let rhost_s = rhost.to_str().unwrap_or_default();
@@ -221,7 +236,7 @@ fn debug(pamh: &Pam, module: &str) {
     let ruser_s = ruser.to_str().unwrap_or_default();
 
     println!(
-        "\n{module} / username {s} / username cached: {sc} / service: {svc_s} / \
+        "\n{module} / username {s} / username cached: {sc} / service: {svc:?} / \
         rhost: {rhost_s} / ruser: {ruser_s}"
     );
 }

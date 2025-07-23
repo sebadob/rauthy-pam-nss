@@ -63,7 +63,7 @@ impl PamToken {
             return Err("PAM token has expired".to_string());
         }
 
-        let url = format!("{}auth/v1/pam/validate/{}", config.url, self.user_id);
+        let url = format!("{}auth/v1/pam/validate/{}", config.rauthy_url, self.user_id);
         RT.block_on(async move {
             let res = CLIENT
                 .get(url)
