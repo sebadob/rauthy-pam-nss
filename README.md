@@ -36,7 +36,8 @@ Non-exhaustive list of features:
 - [x] ssh into a host with a non-existent, Rauthy-managed user with online Passkey validation
 - [x] `sudo` on remote host via SSH session - can be achieved by adding `%wheel-rauthy   ALL=(ALL)   ALL`
   to `/etc/sudoers`
-- [ ] Login to window managers like `gdm` or `sddm`
+- [x] Login to window managers like `gdm` or `sddm`
+- [ ] Copy custom `/etc/skel_rauthy` during home dir creation
 
 On the Rauthy side, a lot of updates are necessary as well of course. I currently
 have [Rauthy #1101](https://github.com/sebadob/rauthy/pull/1101) open to make it work in the end.
