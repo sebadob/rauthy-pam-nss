@@ -87,7 +87,7 @@ impl RauthyPam {
             match p.perform_auth(
                 origin.clone(),
                 resp.rcr.public_key.clone(),
-                start.elapsed().as_micros() as u32 - timeout,
+                start.elapsed().as_millis() as u32 - timeout,
             ) {
                 Ok(pk_cred) => {
                     let res = CLIENT
