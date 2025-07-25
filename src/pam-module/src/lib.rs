@@ -22,6 +22,7 @@ static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
 static RT: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
     tokio::runtime::Builder::new_current_thread()
         .worker_threads(1)
+        .max_blocking_threads(1)
         .enable_all()
         .build()
         .expect("Cannot build tokio runtime")

@@ -7,6 +7,7 @@ use std::{env, fs};
 
 mod auth;
 pub mod token;
+mod webauthn;
 
 static DEBUG: OnceLock<bool> = OnceLock::new();
 

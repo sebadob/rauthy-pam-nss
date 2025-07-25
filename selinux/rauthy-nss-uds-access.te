@@ -8,6 +8,7 @@ require {
         type etc_t;
         type geoclue_t;
         type init_t;
+        type passwd_t;
         type policykit_auth_t;
         type policykit_t;
         type systemd_userdbd_t;
@@ -15,7 +16,7 @@ require {
         type systemd_tmpfiles_t;
         type unconfined_t;
         type unconfined_service_t;
-        type user_tmp_t;
+        #type user_tmp_t;
         type var_lib_t;
         type var_run_t;
 
@@ -29,13 +30,17 @@ require {
 
 #============= abrt_t ==============
 #allow abrt_t self:capability sys_admin;
-allow abrt_t user_tmp_t:sock_file write;
+#allow abrt_t user_tmp_t:sock_file write;
+allow abrt_t var_run_t:sock_file write;
+allow abrt_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= abrt_dump_oops_t ==============
 #allow abrt_dump_oops_t self:capability sys_admin;
 allow abrt_dump_oops_t unconfined_t:unix_stream_socket connectto;
-allow abrt_dump_oops_t user_tmp_t:sock_file write;
+allow abrt_dump_oops_t unconfined_service_t:unix_stream_socket connectto;
+#allow abrt_dump_oops_t user_tmp_t:sock_file write;
+allow abrt_dump_oops_t var_run_t:sock_file write;
 
 
 #============= auditd_t ==============
@@ -76,7 +81,6 @@ allow systemd_userdbd_t var_run_t:sock_file write;
 
 
 #============= systemd_user_runtimedir_t ==============
-
 #allow systemd_user_runtimedir_t config_home_t:dir read;
 #allow systemd_user_runtimedir_t config_home_t:file unlink;
 allow systemd_user_runtimedir_t devlog_t:lnk_file read;
@@ -89,4 +93,5 @@ allow systemd_user_runtimedir_t var_run_t:sock_file write;
 
 
 #============= systemd_tmpfiles_t ==============
+allow systemd_tmpfiles_t unconfined_service_t:unix_stream_socket connectto;
 allow systemd_tmpfiles_t unconfined_t:unix_stream_socket connectto;

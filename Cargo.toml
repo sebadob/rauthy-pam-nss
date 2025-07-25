@@ -21,6 +21,7 @@ bincode = { version = "2", features = ["serde"] }
 chrono = "0.4.41"
 dotenvy = "0.15.7"
 flume = "0.11"
+futures = "0.3.31"
 http-body-util = "0.1"
 hyper = { version = "1.6", features = ["full"] }
 hyper-util = { version = "0.1.15", features = ["tokio", "server-auto", "http1"] }
@@ -36,5 +37,6 @@ tokio = { version = "1.45.0" }
 toml = "0.9"
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "nfc", "ui-cli", "usb"] }
 #webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "nfc", "ui-cli", "usb"] }
-webauthn-authenticator-rs = { version = "0.5.2", features = ["qrcode", "mozilla", "nfc", "ui-cli", "usb"] }
+webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "ui-cli", "usb"] }
 webauthn-rs = "0.5.2"
+webauthn-rs-core = "0.5.2"

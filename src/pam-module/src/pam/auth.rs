@@ -4,14 +4,14 @@ use crate::api_types::{
 };
 use crate::config::Config;
 use crate::pam::token::PamToken;
+use crate::pam::webauthn::PamWebauthn;
 use crate::pam::{PamService, RauthyPam, sys_err, sys_info};
 use crate::{CLIENT, RT};
 use pamsm::{Pam, PamError, PamLibExt};
 use reqwest::Url;
+use std::ops::Deref;
 use std::time::Duration;
 use tokio::time;
-use tokio::time::Instant;
-use webauthn_authenticator_rs::AuthenticatorBackend;
 
 impl RauthyPam {
     async fn preflight(
@@ -45,20 +45,15 @@ impl RauthyPam {
         }
     }
 
-    async fn mfa(origin: Url, username: String) -> Result<String, String> {
+    async fn mfa(pamh: &Pam, origin: Url, username: String) -> Result<String, String> {
         println!("Provide your Passkey");
 
         // This short sleep will fight a race condition.
         // The println may not appear if we try to find keys too quickly, when no key is inserted.
         time::sleep(Duration::from_millis(100)).await;
 
-        // let ui = Cli {};
-        // let mut p = Box::new(Self::webauthn_provider(&ui).await?);
-
-        // TODO for some reason, the generic Ctap2 authenticator does not work
-        //  the Mozilla is limited to USB only, which is realistically the only one that should be
-        //  used anyway, but exploring if we could support cabLE as well would be nice in the future.
-        let mut p = Box::<webauthn_authenticator_rs::mozilla::MozillaAuthenticator>::default();
+        let (ui, _) = crate::pam::webauthn::UI.deref();
+        let authenticator = PamWebauthn::wait_for_passkey(ui).await;
 
         let url_start = format!("{origin}auth/v1/pam/mfa/start");
         let url_finish = format!("{origin}auth/v1/pam/mfa/finish");
@@ -80,47 +75,113 @@ impl RauthyPam {
             return Err(err);
         };
 
-        let timeout = resp.rcr.public_key.timeout.unwrap_or(60_000);
-        let start = Instant::now();
+        match PamWebauthn::perform_auth(pamh, authenticator, origin, resp.rcr.public_key).await {
+            Ok(pk_cred) => {
+                let res = CLIENT
+                    .post(url_finish)
+                    .json(&PamMfaFinishRequest {
+                        user_id: resp.user_id,
+                        data: WebauthnAuthFinishRequest {
+                            code: resp.code,
+                            data: pk_cred,
+                        },
+                    })
+                    .send()
+                    .await
+                    .map_err(|err| err.to_string())?;
 
-        for _ in 0..3 {
-            match p.perform_auth(
-                origin.clone(),
-                resp.rcr.public_key.clone(),
-                start.elapsed().as_millis() as u32 - timeout,
-            ) {
-                Ok(pk_cred) => {
-                    let res = CLIENT
-                        .post(url_finish)
-                        .json(&PamMfaFinishRequest {
-                            user_id: resp.user_id,
-                            data: WebauthnAuthFinishRequest {
-                                code: resp.code,
-                                data: pk_cred,
-                            },
-                        })
-                        .send()
+                let data = if res.status().is_success() {
+                    res.json::<WebauthnServiceReq>()
                         .await
-                        .map_err(|err| err.to_string())?;
+                        .map_err(|err| err.to_string())?
+                } else {
+                    return Err(res.text().await.unwrap_or_default());
+                };
 
-                    let data = if res.status().is_success() {
-                        res.json::<WebauthnServiceReq>()
-                            .await
-                            .map_err(|err| err.to_string())?
-                    } else {
-                        return Err(res.text().await.unwrap_or_default());
-                    };
-
-                    return Ok(data.code);
-                }
-                Err(err) => {
-                    eprintln!("{err:?}");
-                }
+                return Ok(data.code);
+            }
+            Err(err) => {
+                sys_err(pamh, &format!("Passkey validation error: {err:?}"));
+                eprintln!("Passkey validation error: {err:?}");
             }
         }
-
         Err("Passkey validation failed".to_string())
     }
+
+    // async fn mfa(pamh: &Pam, origin: Url, username: String) -> Result<String, String> {
+    //     println!("Provide your Passkey");
+    //
+    //     // This short sleep will fight a race condition.
+    //     // The println may not appear if we try to find keys too quickly, when no key is inserted.
+    //     time::sleep(Duration::from_millis(100)).await;
+    //
+    //     // TODO for some reason, the generic Ctap2 authenticator does not work
+    //     //  the Mozilla is limited to USB only, which is realistically the only one that should be
+    //     //  used anyway, but exploring if we could support cabLE as well would be nice in the future.
+    //     let mut p = Box::<webauthn_authenticator_rs::mozilla::MozillaAuthenticator>::default();
+    //
+    //     let url_start = format!("{origin}auth/v1/pam/mfa/start");
+    //     let url_finish = format!("{origin}auth/v1/pam/mfa/finish");
+    //
+    //     let res = CLIENT
+    //         .post(url_start)
+    //         .json(&PamMfaStartRequest { username })
+    //         .send()
+    //         .await
+    //         .map_err(|err| err.to_string())?;
+    //
+    //     let resp = if res.status().is_success() {
+    //         res.json::<WebauthnAuthStartResponse>()
+    //             .await
+    //             .map_err(|err| err.to_string())?
+    //     } else {
+    //         let err = res.text().await.unwrap_or_default();
+    //         eprintln!("{err}");
+    //         return Err(err);
+    //     };
+    //
+    //     let timeout = resp.rcr.public_key.timeout.unwrap_or(60_000);
+    //     let start = Instant::now();
+    //
+    //     for _ in 0..3 {
+    //         match p.perform_auth(
+    //             origin.clone(),
+    //             resp.rcr.public_key.clone(),
+    //             start.elapsed().as_millis() as u32 - timeout,
+    //         ) {
+    //             Ok(pk_cred) => {
+    //                 let res = CLIENT
+    //                     .post(url_finish)
+    //                     .json(&PamMfaFinishRequest {
+    //                         user_id: resp.user_id,
+    //                         data: WebauthnAuthFinishRequest {
+    //                             code: resp.code,
+    //                             data: pk_cred,
+    //                         },
+    //                     })
+    //                     .send()
+    //                     .await
+    //                     .map_err(|err| err.to_string())?;
+    //
+    //                 let data = if res.status().is_success() {
+    //                     res.json::<WebauthnServiceReq>()
+    //                         .await
+    //                         .map_err(|err| err.to_string())?
+    //                 } else {
+    //                     return Err(res.text().await.unwrap_or_default());
+    //                 };
+    //
+    //                 return Ok(data.code);
+    //             }
+    //             Err(err) => {
+    //                 sys_err(pamh, &format!("Passkey validation error: {err:?}"));
+    //                 eprintln!("Passkey validation error: {err:?}");
+    //             }
+    //         }
+    //     }
+    //
+    //     Err("Passkey validation failed".to_string())
+    // }
 
     async fn send_login(origin: Url, payload: PamLoginRequest) -> Result<PamToken, String> {
         let url = format!("{origin}auth/v1/pam/login");
@@ -196,7 +257,11 @@ impl RauthyPam {
         };
 
         if preflight.mfa_required && !is_remote {
-            match RT.block_on(Self::mfa(config.rauthy_url.clone(), username.to_string())) {
+            match RT.block_on(Self::mfa(
+                pamh,
+                config.rauthy_url.clone(),
+                username.to_string(),
+            )) {
                 Ok(webauthn_code) => {
                     login_req.webauthn_code = Some(webauthn_code);
                 }
