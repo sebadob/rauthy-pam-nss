@@ -2,10 +2,13 @@ use crate::config::Config;
 use crate::constants::{ENV_SESSION, ENV_USER_EMAIL, ENV_USER_ID, ENV_USERNAME};
 use crate::pam::token::PamToken;
 use pamsm::{LogLvl, Pam, PamError, PamFlags, PamLibExt, PamServiceModule};
+use std::sync::OnceLock;
 use std::{env, fs};
 
 mod auth;
 pub mod token;
+
+static DEBUG: OnceLock<bool> = OnceLock::new();
 
 macro_rules! load_config_token {
     ($pamh:expr, $username:expr) => {{
@@ -107,7 +110,9 @@ impl RauthyPam {
         match pamh.get_service() {
             Ok(v) => {
                 let svc = v.unwrap_or_default().to_str().unwrap_or_default();
-                sys_info(pamh, &format!("Service detected: {svc}"));
+                if *DEBUG.get().unwrap() {
+                    sys_info(pamh, &format!("Service detected: {svc}"));
+                }
 
                 match svc.to_lowercase().as_str() {
                     "login" => PamService::Login,
@@ -126,7 +131,8 @@ impl RauthyPam {
 }
 
 impl PamServiceModule for RauthyPam {
-    fn acct_mgmt(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
+    fn acct_mgmt(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
+        set_debug(&args);
         debug(&pamh, "acct_mgmt");
 
         let svc = Self::get_service(&pamh);
@@ -138,7 +144,7 @@ impl PamServiceModule for RauthyPam {
         let (config, token) = load_config_token!(&pamh, username);
 
         if let Some(token) = token
-            && token.validate(&config).is_ok()
+            && token.validate(config).is_ok()
         {
             PamError::SUCCESS
         } else {
@@ -146,16 +152,17 @@ impl PamServiceModule for RauthyPam {
         }
     }
 
-    fn authenticate(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
+    fn authenticate(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
+        set_debug(&args);
+        debug(&pamh, "authenticate");
+
         let svc = Self::get_service(&pamh);
         let username = if matches!(svc, PamService::Sudo | PamService::Su) {
             get_nonlocal_r_username!(&pamh)
         } else {
             get_nonlocal_username!(&pamh)
         };
-        println!("authenticate username: {username}");
-
-        debug(&pamh, "authenticate");
+        // println!("authenticate username: {username}");
 
         match Self::handle_authenticate(&pamh, username, svc) {
             Ok(_) => PamError::SUCCESS,
@@ -167,31 +174,31 @@ impl PamServiceModule for RauthyPam {
     }
 
     // will usually be triggered as root and NOT with the actual user
-    fn setcred(pamh: Pam, _: PamFlags, _: Vec<String>) -> PamError {
+    fn setcred(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
+        set_debug(&args);
         debug(&pamh, "setcred");
 
-        // TODO should we even do anything here other than making sure it's not a local user?
-        //  Can we maybe log an information with the link to the account dashboard?
         let _username = get_nonlocal_username!(&pamh);
-        // let (config, token) = load_config_token!(&pamh, username);
+        // let (config, _) = load_config_token!(&pamh, username);
+        // println!(
+        //     r#"You cannot change your credentials here, please go to your account dashboard:
+        //
+        //     {}/auth/v1/account
+        //     "#,
+        //     config.rauthy_url
+        // );
 
         PamError::SUCCESS
     }
 
-    // will usually be triggered as root and NOT with the actual user
-    //
-    // TODO find a way to retrieve the original username here
-    //  -> tricky, because usually root opens and closes sessions
-    fn open_session(pamh: Pam, _: PamFlags, _args: Vec<String>) -> PamError {
+    fn open_session(pamh: Pam, _: PamFlags, args: Vec<String>) -> PamError {
+        set_debug(&args);
         debug(&pamh, "open_session");
-        // let username = get_nonlocal_username!(&pamh);
-        // println!("open_session username: {username}");
 
+        // TODO will we ever need to check the remote user here?
         let username = get_nonlocal_username!(&pamh);
-        // let username = get_nonlocal_r_username!(&pamh);
         let (_config, token) = load_config_token!(&pamh, username);
 
-        // TODO accept an args to live-validate the token
         if let Some(token) = token {
             token.create_home_dir();
 
@@ -217,7 +224,8 @@ impl PamServiceModule for RauthyPam {
     }
 
     // will usually be triggered as root and NOT with the actual user
-    fn close_session(pamh: Pam, _flags: PamFlags, _: Vec<String>) -> PamError {
+    fn close_session(pamh: Pam, _flags: PamFlags, args: Vec<String>) -> PamError {
+        set_debug(&args);
         debug(&pamh, "close_session");
 
         let username = get_nonlocal_username!(&pamh);
@@ -232,6 +240,10 @@ impl PamServiceModule for RauthyPam {
 }
 
 fn debug(pamh: &Pam, module: &str) {
+    if !*DEBUG.get().unwrap() {
+        return;
+    }
+
     let cstr = pamh
         .get_user(Some("User: "))
         .unwrap_or_default()
@@ -252,10 +264,22 @@ fn debug(pamh: &Pam, module: &str) {
     let ruser = pamh.get_ruser().unwrap_or_default().unwrap_or_default();
     let ruser_s = ruser.to_str().unwrap_or_default();
 
-    println!(
-        "\n{module} / username {s} / username cached: {sc} / service: {svc:?} / \
-        rhost: {rhost_s} / ruser: {ruser_s}"
+    sys_info(
+        pamh,
+        &format!(
+            "\n{module} / username {s} / username cached: {sc} / \
+            service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}"
+        ),
     );
+    println!(
+        "\n{module} / username {s} / username cached: {sc} / \
+        service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}"
+    );
+}
+
+#[inline]
+fn set_debug(args: &[String]) {
+    let _ = DEBUG.set(args.first().map(|v| v.as_str()) == Some("debug"));
 }
 
 #[inline]

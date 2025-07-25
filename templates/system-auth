@@ -1,15 +1,15 @@
 auth        required                                     pam_env.so
 auth        required                                     pam_faildelay.so delay=2000000
-auth        required                                     pam_faillock.so preauth silent
-auth        sufficient                                   pam_rauthy.so
-auth        required                                     pam_faillock.so authfail
+#auth        required                                     pam_faillock.so preauth silent
+auth        sufficient                                   pam_rauthy.so debug
+#auth        required                                     pam_faillock.so authfail
 auth        required                                     pam_unix.so
 
-account     required                                     pam_faillock.so
-account     sufficient                                   pam_rauthy.so
+#account     required                                     pam_faillock.so
+account     sufficient                                   pam_rauthy.so debug
 account     required                                     pam_unix.so
 
-password    sufficient                                   pam_rauthy.so
+password    sufficient                                   pam_rauthy.so debug
 password    requisite                                    pam_pwquality.so local_users_only
 password    sufficient                                   pam_unix.so yescrypt shadow use_authtok
 password    [success=1 default=ignore]                   pam_localuser.so
@@ -19,5 +19,5 @@ session     optional                                     pam_keyinit.so revoke
 session     required                                     pam_limits.so
 -session    optional                                     pam_systemd.so
 session     [success=1 default=ignore]                   pam_succeed_if.so service in crond quiet use_uid
-session     sufficient                                   pam_rauthy.so
+session     sufficient                                   pam_rauthy.so debug
 session     required                                     pam_unix.so

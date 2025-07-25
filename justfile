@@ -67,6 +67,11 @@ apply-selinux ty="local":
         checkmodule -M -m -o pam-rauthy-local.mod pam-rauthy-local.te
         semodule_package -m pam-rauthy-local.mod -o pam-rauthy-local.pp
         sudo semodule -i pam-rauthy-local.pp
+    elif [[ {{ ty }} == "gdm" ]]; then
+        echo 'Building and applying SELinux rules for gdm login'
+        checkmodule -M -m -o pam-rauthy-gdm.mod pam-rauthy-gdm.te
+        semodule_package -m pam-rauthy-gdm.mod -o pam-rauthy-gdm.pp
+        sudo semodule -i pam-rauthy-gdm.pp
     elif [[ {{ ty }} == "nis" ]]; then
         setsebool -P nis_enabled 1
     elif [[ {{ ty }} == "nss" ]]; then

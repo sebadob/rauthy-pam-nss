@@ -7,10 +7,13 @@ use std::fs;
 use std::fs::{File, Permissions};
 use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
+use std::sync::OnceLock;
 
 // TODO change path + data to the same location as the proxy to re-use it
 static PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
 // static PATH: &str = "/etc/security/pam_rauthy.toml";
+
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -50,17 +53,24 @@ impl Config {
     }
 
     #[inline]
-    pub fn read() -> anyhow::Result<Self> {
+    pub fn read() -> anyhow::Result<&'static Self> {
+        if let Some(slf) = CONFIG.get() {
+            return Ok(slf);
+        }
+
         let content = fs::read_to_string(PATH)?;
         let slf = toml::from_str::<Self>(&content)?;
-        Ok(slf)
+
+        let _ = CONFIG.set(slf);
+
+        Ok(CONFIG.get().unwrap())
     }
 
     #[inline]
     pub fn read_create() -> anyhow::Result<Self> {
-        println!("config path {PATH}");
+        // println!("config path {PATH}");
         let mut file = File::open(PATH)?;
-        println!("{file:?}");
+        // println!("{file:?}");
 
         let perms = Permissions::from_mode(0o644);
         if file.metadata()?.permissions() != perms {

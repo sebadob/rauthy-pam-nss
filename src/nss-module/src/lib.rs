@@ -7,10 +7,10 @@ mod api_types;
 mod nss;
 mod uds;
 
-// #[cfg(debug_assertions)]
+#[cfg(debug_assertions)]
 static PROXY_SOCKET: &str = "/tmp/rauthy/rauthy_proxy.sock";
-// #[cfg(not(debug_assertions))]
-// static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
+#[cfg(not(debug_assertions))]
+static PROXY_SOCKET: &str = "/run/rauthy/rauthy_proxy.sock";
 
 pub struct RauthyNss;
 

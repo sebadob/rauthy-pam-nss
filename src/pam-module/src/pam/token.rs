@@ -6,8 +6,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::Permissions;
 use std::os::unix::fs::{PermissionsExt, chown};
+use std::sync::OnceLock;
 
-#[derive(Debug, Serialize, Deserialize)]
+static TOKEN: OnceLock<Option<PamToken>> = OnceLock::new();
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PamToken {
     pub id: String,
     pub exp: i64,
@@ -29,7 +32,15 @@ impl PamToken {
             .expect("Cannot set permissions for new user homedir");
     }
 
-    pub fn try_load(config: &Config, username: &str) -> anyhow::Result<Option<Self>> {
+    pub fn try_load(config: &Config, username: &str) -> anyhow::Result<Option<&'static Self>> {
+        if let Some(opt) = TOKEN.get() {
+            return if let Some(slf) = opt {
+                Ok(Some(slf))
+            } else {
+                Ok(None)
+            };
+        }
+
         let base = config.data_path_user(username);
         let path = format!("{base}/token");
 
@@ -38,9 +49,13 @@ impl PamToken {
             bincode::serde::decode_from_slice::<Self, _>(&bytes, bincode::config::standard())?;
 
         match slf.validate(config) {
-            Ok(_) => Ok(Some(slf)),
+            Ok(_) => {
+                TOKEN.set(Some(slf)).unwrap();
+                Ok(Some(TOKEN.get().unwrap().as_ref().unwrap()))
+            }
             Err(err) => {
                 eprintln!("Token Validation Error: {err}");
+                TOKEN.set(None).unwrap();
                 Ok(None)
             }
         }

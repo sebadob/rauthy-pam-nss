@@ -3,8 +3,8 @@ rauthy_url = "http://localhost:8080"
 
 # Access credentials for this host.
 # TODO Rauthy could implement an origin IP check during lookups.
-host_id = "ajzXjWMsMDOnFuvfobzjVJMG"
-host_secret = "mYSiVnWIGdRKHymYuINbetjqCeFKRlgTewPBpvFVfPDIFItNziyOuKrmaHLvAecM"
+host_id = "kXWAkHNAlBZPXEEbsKctIaSL"
+host_secret = "nNMgrEMbYmYaVqIHmHwhWkbojLhdqShUYDJEOaKvWeaKLoFqpGxDuyzndlExZmny"
 
 # console | file | console_file | syslog
 log_target = "console"

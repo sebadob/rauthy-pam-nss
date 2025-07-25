@@ -8,6 +8,9 @@ use crate::pam::{PamService, RauthyPam, sys_err, sys_info};
 use crate::{CLIENT, RT};
 use pamsm::{Pam, PamError, PamLibExt};
 use reqwest::Url;
+use std::time::Duration;
+use tokio::time;
+use tokio::time::Instant;
 use webauthn_authenticator_rs::AuthenticatorBackend;
 
 impl RauthyPam {
@@ -45,6 +48,10 @@ impl RauthyPam {
     async fn mfa(origin: Url, username: String) -> Result<String, String> {
         println!("Provide your Passkey");
 
+        // This short sleep will fight a race condition.
+        // The println may not appear if we try to find keys too quickly, when no key is inserted.
+        time::sleep(Duration::from_millis(100)).await;
+
         // let ui = Cli {};
         // let mut p = Box::new(Self::webauthn_provider(&ui).await?);
 
@@ -56,16 +63,12 @@ impl RauthyPam {
         let url_start = format!("{origin}auth/v1/pam/mfa/start");
         let url_finish = format!("{origin}auth/v1/pam/mfa/finish");
 
-        println!("1");
-
         let res = CLIENT
             .post(url_start)
             .json(&PamMfaStartRequest { username })
             .send()
             .await
             .map_err(|err| err.to_string())?;
-
-        println!("{res:?}");
 
         let resp = if res.status().is_success() {
             res.json::<WebauthnAuthStartResponse>()
@@ -75,39 +78,48 @@ impl RauthyPam {
             let err = res.text().await.unwrap_or_default();
             eprintln!("{err}");
             return Err(err);
-            // return Err(res.text().await.unwrap_or_default());
         };
-
-        println!("{resp:?}");
 
         let timeout = resp.rcr.public_key.timeout.unwrap_or(60_000);
+        let start = Instant::now();
 
-        let pk_cred = p
-            .perform_auth(origin, resp.rcr.public_key, timeout)
-            .unwrap();
+        for _ in 0..3 {
+            match p.perform_auth(
+                origin.clone(),
+                resp.rcr.public_key.clone(),
+                start.elapsed().as_micros() as u32 - timeout,
+            ) {
+                Ok(pk_cred) => {
+                    let res = CLIENT
+                        .post(url_finish)
+                        .json(&PamMfaFinishRequest {
+                            user_id: resp.user_id,
+                            data: WebauthnAuthFinishRequest {
+                                code: resp.code,
+                                data: pk_cred,
+                            },
+                        })
+                        .send()
+                        .await
+                        .map_err(|err| err.to_string())?;
 
-        let res = CLIENT
-            .post(url_finish)
-            .json(&PamMfaFinishRequest {
-                user_id: resp.user_id,
-                data: WebauthnAuthFinishRequest {
-                    code: resp.code,
-                    data: pk_cred,
-                },
-            })
-            .send()
-            .await
-            .map_err(|err| err.to_string())?;
+                    let data = if res.status().is_success() {
+                        res.json::<WebauthnServiceReq>()
+                            .await
+                            .map_err(|err| err.to_string())?
+                    } else {
+                        return Err(res.text().await.unwrap_or_default());
+                    };
 
-        let data = if res.status().is_success() {
-            res.json::<WebauthnServiceReq>()
-                .await
-                .map_err(|err| err.to_string())?
-        } else {
-            return Err(res.text().await.unwrap_or_default());
-        };
+                    return Ok(data.code);
+                }
+                Err(err) => {
+                    eprintln!("{err:?}");
+                }
+            }
+        }
 
-        Ok(data.code)
+        Err("Passkey validation failed".to_string())
     }
 
     async fn send_login(origin: Url, payload: PamLoginRequest) -> Result<PamToken, String> {
@@ -148,6 +160,7 @@ impl RauthyPam {
         // Only true AFTER an SSH session ahs been created
         let is_ssh_session = Self::is_remote_session();
         let is_ssh_login = Self::get_service(pamh) == PamService::Ssh;
+        let is_remote = is_ssh_login || is_ssh_session;
 
         sys_info(
             pamh,
@@ -182,7 +195,7 @@ impl RauthyPam {
             webauthn_code: None,
         };
 
-        if preflight.mfa_required && !is_ssh_login && !is_ssh_session {
+        if preflight.mfa_required && !is_remote {
             match RT.block_on(Self::mfa(config.rauthy_url.clone(), username.to_string())) {
                 Ok(webauthn_code) => {
                     login_req.webauthn_code = Some(webauthn_code);
@@ -193,7 +206,7 @@ impl RauthyPam {
                 }
             }
         } else {
-            let text = if is_ssh_login || is_ssh_session {
+            let text = if is_remote {
                 "Remote PAM Password: "
             } else {
                 "Password: "
@@ -209,11 +222,7 @@ impl RauthyPam {
                     return Err(err);
                 }
             };
-            // sys_info(
-            //     pamh,
-            //     &format!("RauthyPam - login trying user {username} with passwrod {password}"),
-            // );
-            if is_ssh_login || is_ssh_session {
+            if is_remote {
                 login_req.remote_password = Some(password)
             } else {
                 login_req.password = Some(password);
@@ -233,13 +242,7 @@ impl RauthyPam {
                     sys_err(pamh, &format!("Error saving PAM token: {err}"));
                 }
 
-                token.create_home_dir();
-
-                // TODO move user creation into session open
-                // if !Self::user_exists(&token.user_email) {
-                //     Self::create_user(&token.user_id, &token.user_email)
-                //         .expect("Cannot create user");
-                // }
+                // token.create_home_dir();
 
                 Ok(())
             }
