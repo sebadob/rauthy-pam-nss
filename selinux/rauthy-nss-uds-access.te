@@ -1,6 +1,8 @@
 module rauthy-nss-uds-access 1.0;
 
 require {
+        type abrt_t;
+        type abrt_dump_oops_t;
         type auditd_t;
         type devlog_t;
         type etc_t;
@@ -13,9 +15,9 @@ require {
         type systemd_tmpfiles_t;
         type unconfined_t;
         type unconfined_service_t;
+        type user_tmp_t;
         type var_lib_t;
         type var_run_t;
-        type xdm_t;
 
         #class file setattr;
         class dir { read setattr write };
@@ -24,6 +26,16 @@ require {
         class sock_file write;
         class unix_stream_socket connectto;
 }
+
+#============= abrt_t ==============
+#allow abrt_t self:capability sys_admin;
+allow abrt_t user_tmp_t:sock_file write;
+
+
+#============= abrt_dump_oops_t ==============
+#allow abrt_dump_oops_t self:capability sys_admin;
+allow abrt_dump_oops_t unconfined_t:unix_stream_socket connectto;
+allow abrt_dump_oops_t user_tmp_t:sock_file write;
 
 
 #============= auditd_t ==============
@@ -38,14 +50,13 @@ allow auditd_t unconfined_service_t:unix_stream_socket connectto;
 allow init_t unconfined_service_t:unix_stream_socket connectto;
 
 
-#============= systemd_userdbd_t ==============
-allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
-allow systemd_userdbd_t var_run_t:sock_file write;
-
-
 #============= geoclue_t ==============
 allow geoclue_t var_run_t:sock_file write;
 allow geoclue_t unconfined_service_t:unix_stream_socket connectto;
+
+
+#============= passwd_t ==============
+allow passwd_t var_run_t:sock_file write;
 
 
 #============= policykit_auth_t ==============
@@ -57,6 +68,11 @@ allow policykit_auth_t var_run_t:sock_file write;
 #allow policykit_t policykit_auth_t:process noatsecure;
 allow policykit_t unconfined_service_t:unix_stream_socket connectto;
 allow policykit_t var_run_t:sock_file write;
+
+
+#============= systemd_userdbd_t ==============
+allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_userdbd_t var_run_t:sock_file write;
 
 
 #============= systemd_user_runtimedir_t ==============
@@ -74,11 +90,3 @@ allow systemd_user_runtimedir_t var_run_t:sock_file write;
 
 #============= systemd_tmpfiles_t ==============
 allow systemd_tmpfiles_t unconfined_t:unix_stream_socket connectto;
-
-
-#============= xdm_t ==============
-# probably only when you use gdm
-#allow xdm_t chkpwd_t:process noatsecure;
-#allow xdm_t etc_t:file setattr;
-#allow xdm_t init_var_lib_t:dir { getattr search };
-allow xdm_t var_run_t:sock_file write;

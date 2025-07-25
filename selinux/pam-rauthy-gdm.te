@@ -1,0 +1,42 @@
+
+module pam-rauthy-gdm 1.0;
+
+require {
+	#type chkpwd_t;
+	type colord_t;
+	type etc_t;
+	type home_root_t;
+	type init_var_lib_t;
+	type NetworkManager_t;
+	type unconfined_service_t;
+	type var_lib_t;
+	type var_run_t;
+	type xdm_t;
+
+	#class process noatsecure;
+	class dir { add_name create getattr setattr search };
+	class file { setattr write };
+	class sock_file write;
+	class unix_stream_socket connectto;
+}
+
+#============= colord_t ==============
+allow colord_t unconfined_service_t:unix_stream_socket connectto;
+allow colord_t var_run_t:sock_file write;
+
+
+#============= NetworkManager_t ==============
+allow NetworkManager_t etc_t:file setattr;
+allow NetworkManager_t unconfined_service_t:unix_stream_socket connectto;
+allow NetworkManager_t var_lib_t:dir setattr;
+allow NetworkManager_t var_run_t:sock_file write;
+
+
+#============= xdm_t ==============
+#allow xdm_t chkpwd_t:process noatsecure;
+allow xdm_t etc_t:file setattr;
+#allow xdm_t home_root_t:dir add_name;
+allow xdm_t home_root_t:dir create;
+allow xdm_t init_var_lib_t:dir { getattr search };
+allow xdm_t var_lib_t:file write;
+allow xdm_t var_run_t:sock_file write;

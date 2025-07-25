@@ -3,6 +3,7 @@ module pam-rauthy-ssh 1.0;
 
 require {
 	type etc_t;
+    type user_home_dir_t;
     type home_root_t;
     type http_port_t;
     type http_cache_port_t;
@@ -23,6 +24,7 @@ require {
 #============= sshd_t ==============
 allow sshd_t etc_t:file setattr;
 allow sshd_t home_root_t:dir setattr;
+allow sshd_t user_home_dir_t:dir setattr;
 allow sshd_t unlabeled_t:file read;
 allow sshd_t var_lib_t:dir setattr;
 allow sshd_t var_lib_t:file { create getattr open read write };
