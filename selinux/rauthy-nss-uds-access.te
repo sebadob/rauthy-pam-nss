@@ -7,6 +7,7 @@ require {
         type devlog_t;
         type etc_t;
         type geoclue_t;
+        type logrotate_t;
         type init_t;
         type passwd_t;
         type policykit_auth_t;
@@ -60,24 +61,29 @@ allow geoclue_t var_run_t:sock_file write;
 allow geoclue_t unconfined_service_t:unix_stream_socket connectto;
 
 
+#============= logrotate_t ==============
+allow logrotate_t var_run_t:sock_file write;
+allow logrotate_t unconfined_service_t:unix_stream_socket connectto;
+
+
 #============= passwd_t ==============
 allow passwd_t var_run_t:sock_file write;
 
 
 #============= policykit_auth_t ==============
-allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
 allow policykit_auth_t var_run_t:sock_file write;
+allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= policykit_t ==============
+allow policykit_t var_run_t:sock_file write;
 #allow policykit_t policykit_auth_t:process noatsecure;
 allow policykit_t unconfined_service_t:unix_stream_socket connectto;
-allow policykit_t var_run_t:sock_file write;
 
 
 #============= systemd_userdbd_t ==============
-allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
 allow systemd_userdbd_t var_run_t:sock_file write;
+allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= systemd_user_runtimedir_t ==============
