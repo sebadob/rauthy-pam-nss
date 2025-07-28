@@ -1,5 +1,4 @@
 use log::debug;
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::Permissions;
@@ -7,6 +6,7 @@ use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::OnceLock;
+use url::Url;
 
 #[cfg(debug_assertions)]
 pub static CONFIG_PATH: &str = "./rauthy-pam-nss.toml";

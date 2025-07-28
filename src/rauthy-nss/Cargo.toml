@@ -13,8 +13,11 @@ flume.workspace = true
 chrono.workspace = true
 log.workspace = true
 log4rs.workspace = true
+openssl.workspace = true
+openssl-sys.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 syslog.workspace = true
 tokio = { workspace = true, features = ["full"] }
+url.workspace = true
 toml.workspace = true
