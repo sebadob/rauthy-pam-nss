@@ -79,6 +79,11 @@ apply-selinux ty="local":
         checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te
         semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp
         sudo semodule -i rauthy-nss-uds-access.pp
+    elif [[ {{ ty }} == "script" ]]; then
+        echo 'Building and applying SELinux rules for skel dir copy'
+        checkmodule -M -m -o pam-rauthy-script.mod pam-rauthy-script.te
+        semodule_package -m pam-rauthy-script.mod -o pam-rauthy-script.pp
+        sudo semodule -i pam-rauthy-script.pp
     elif [[ {{ ty }} == "skel" ]]; then
         echo 'Building and applying SELinux rules for skel dir copy'
         checkmodule -M -m -o pam-rauthy-skel.mod pam-rauthy-skel.te
@@ -96,7 +101,10 @@ remove-selinux:
     #!/usr/bin/env bash
     set -euxo pipefail
     sudo semodule -r pam-rauthy-local
+    sudo semodule -r pam-rauthy-gdm
     sudo semodule -r pam-rauthy-nss
+    sudo semodule -r pam-rauthy-script
+    sudo semodule -r pam-rauthy-skel
     sudo semodule -r pam-rauthy-ssh
     setsebool -P nis_enabled 0
 
