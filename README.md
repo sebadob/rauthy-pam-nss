@@ -38,7 +38,7 @@ Non-exhaustive list of features:
   to `/etc/sudoers`
 - [x] Login to window managers like `gdm` or `sddm`
 - [x] Copy custom `/etc/skel_rauthy` during home dir creation
-- [ ] optionally execute custom scripts on session open / close
+- [x] optionally execute custom scripts on session open / close during login
 
 On the Rauthy side, a lot of updates are necessary as well of course. I currently
 have [Rauthy #1101](https://github.com/sebadob/rauthy/pull/1101) open to make it work in the end.

@@ -2,6 +2,8 @@ use crate::config::Config;
 use crate::constants::{ENV_SESSION, ENV_USER_EMAIL, ENV_USER_ID, ENV_USERNAME};
 use crate::pam::token::PamToken;
 use pamsm::{LogLvl, Pam, PamError, PamFlags, PamLibExt, PamServiceModule};
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::OnceLock;
 use std::{env, fs};
 
@@ -12,7 +14,7 @@ mod webauthn;
 static DEBUG: OnceLock<bool> = OnceLock::new();
 
 macro_rules! load_config_token {
-    ($pamh:expr, $username:expr) => {{
+    ($pamh:expr, $username:expr, $validate:expr) => {{
         let config = match Config::read() {
             Ok(c) => c,
             Err(err) => {
@@ -21,7 +23,7 @@ macro_rules! load_config_token {
             }
         };
 
-        let token = match PamToken::try_load(&config, $username) {
+        let token = match PamToken::try_load(&config, $username, $validate) {
             Ok(t) => t,
             Err(err) => {
                 sys_err($pamh, &format!("Error loading PAM token: {err}"));
@@ -81,13 +83,65 @@ pub enum PamService {
     Ssh,
     Sudo,
     Su,
-    Other,
+    Other(String),
     Unknown,
 }
 
 pub struct RauthyPam;
 
 impl RauthyPam {
+    fn exec_script(pamh: &Pam, path: &PathBuf, token: &PamToken) -> anyhow::Result<()> {
+        let file = fs::File::open(path)?;
+        let meta = file.metadata()?;
+        if !meta.is_file() {
+            return Err(anyhow::Error::msg("target path is not a file"));
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::prelude::*;
+
+            if meta.uid() != 0 {
+                return Err(anyhow::Error::msg(format!(
+                    "{path:?} must be owned by root"
+                )));
+            }
+
+            let mode = meta.permissions().mode();
+            if mode != 0o100700 {
+                return Err(anyhow::Error::msg(format!(
+                    "Invalid permissions on script, expected {:#o}, found {:#o}",
+                    0o100700, mode
+                )));
+            }
+        }
+
+        let cmd = format!(
+            "{} {} {} {} {} {}",
+            path.to_str().unwrap_or_default(),
+            token.username,
+            token.uid,
+            token.gid,
+            token.user_id,
+            token.user_email
+        );
+        let res = Command::new("/bin/bash").arg("-c").arg(cmd).output()?;
+
+        if res.status.success() {
+            if *DEBUG.get().unwrap() {
+                let out = String::from_utf8_lossy(res.stdout.as_slice());
+                if !out.is_empty() {
+                    sys_info(pamh, out.as_ref());
+                }
+            }
+            Ok(())
+        } else {
+            let err = String::from_utf8_lossy(res.stderr.as_slice());
+            sys_err(pamh, err.as_ref());
+            Err(anyhow::Error::msg(err.to_string()))
+        }
+    }
+
     #[inline]
     fn is_local_user(username: &str) -> bool {
         let passwd = fs::read_to_string("/etc/passwd").expect("Cannot access /etc/passwd");
@@ -118,9 +172,9 @@ impl RauthyPam {
                 match svc.to_lowercase().as_str() {
                     "login" => PamService::Login,
                     "sshd" => PamService::Ssh,
-                    "sudo" => PamService::Sudo,
-                    "su" => PamService::Su,
-                    _ => PamService::Other,
+                    "sudo" | "sudo-i" => PamService::Sudo,
+                    "su" | "su-l" => PamService::Su,
+                    s => PamService::Other(s.to_string()),
                 }
             }
             Err(err) => {
@@ -142,7 +196,7 @@ impl PamServiceModule for RauthyPam {
         } else {
             get_nonlocal_username!(&pamh)
         };
-        let (config, token) = load_config_token!(&pamh, username);
+        let (config, token) = load_config_token!(&pamh, username, true);
 
         if let Some(token) = token
             && token.validate(config).is_ok()
@@ -198,7 +252,7 @@ impl PamServiceModule for RauthyPam {
 
         // TODO will we ever need to check the remote user here?
         let username = get_nonlocal_username!(&pamh);
-        let (_config, token) = load_config_token!(&pamh, username);
+        let (config, token) = load_config_token!(&pamh, username, false);
 
         if let Some(token) = token {
             if let Err(err) = token.create_home_dir() {
@@ -219,6 +273,16 @@ impl PamServiceModule for RauthyPam {
             pamh.putenv(&format!("{ENV_USERNAME}={}", token.username))
                 .unwrap();
 
+            if let Some(path) = &config.exec_session_open {
+                let svc = Self::get_service(&pamh);
+
+                if (svc == PamService::Login || svc == PamService::Ssh)
+                    && let Err(err) = Self::exec_script(&pamh, path, token)
+                {
+                    sys_err(&pamh, &err.to_string());
+                }
+            }
+
             PamError::SUCCESS
         } else {
             eprintln!("No token in open session");
@@ -233,11 +297,31 @@ impl PamServiceModule for RauthyPam {
 
         let username = get_nonlocal_username!(&pamh);
         // let username = get_nonlocal_r_username!(&pamh);
-        let (_config, _token) = load_config_token!(&pamh, username);
+        let (config, token) = load_config_token!(&pamh, username, false);
 
         // let _ = get_nonlocal_username!(&pamh);
         // TODO delete token ? Or maybe full logout on server as well?
         // sys_info(&pamh, "in RauthyPam close_session");
+
+        if let Some(path) = &config.exec_session_close {
+            match token {
+                None => {
+                    sys_err(
+                        &pamh,
+                        "No PamToken found - cannot execute session close script",
+                    );
+                }
+                Some(token) => {
+                    let svc = Self::get_service(&pamh);
+                    if (svc == PamService::Login || svc == PamService::Ssh)
+                        && let Err(err) = Self::exec_script(&pamh, path, token)
+                    {
+                        sys_err(&pamh, &err.to_string());
+                    }
+                }
+            }
+        }
+
         PamError::SUCCESS
     }
 }
@@ -253,12 +337,6 @@ fn debug(pamh: &Pam, module: &str) {
         .unwrap_or_default();
     let s = cstr.to_str().unwrap_or_default();
 
-    let cstr_cached = pamh
-        .get_cached_user()
-        .unwrap_or_default()
-        .unwrap_or_default();
-    let sc = cstr_cached.to_str().unwrap_or_default();
-
     let svc = RauthyPam::get_service(pamh);
 
     let rhost = pamh.get_rhost().unwrap_or_default().unwrap_or_default();
@@ -270,19 +348,15 @@ fn debug(pamh: &Pam, module: &str) {
     sys_info(
         pamh,
         &format!(
-            "\n{module} / username {s} / username cached: {sc} / \
-            service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}"
+            "{module} : username {s} / service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}"
         ),
     );
-    println!(
-        "\n{module} / username {s} / username cached: {sc} / \
-        service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}"
-    );
+    println!("{module} : username {s} / service: {svc:?} / rhost: {rhost_s} / ruser: {ruser_s}");
 }
 
 #[inline]
 fn set_debug(args: &[String]) {
-    let _ = DEBUG.set(args.first().map(|v| v.as_str()) == Some("debug"));
+    let _ = DEBUG.set(args.iter().any(|v| v.as_str() == "debug"));
 }
 
 #[inline]

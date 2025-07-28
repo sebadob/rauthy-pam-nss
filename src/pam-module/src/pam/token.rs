@@ -48,7 +48,11 @@ impl PamToken {
         Ok(())
     }
 
-    pub fn try_load(config: &Config, username: &str) -> anyhow::Result<Option<&'static Self>> {
+    pub fn try_load(
+        config: &Config,
+        username: &str,
+        with_validation: bool,
+    ) -> anyhow::Result<Option<&'static Self>> {
         if let Some(opt) = TOKEN.get() {
             return if let Some(slf) = opt {
                 Ok(Some(slf))
@@ -64,16 +68,20 @@ impl PamToken {
         let (slf, _) =
             bincode::serde::decode_from_slice::<Self, _>(&bytes, bincode::config::standard())?;
 
-        match slf.validate(config) {
-            Ok(_) => {
-                TOKEN.set(Some(slf)).unwrap();
-                Ok(Some(TOKEN.get().unwrap().as_ref().unwrap()))
+        if with_validation {
+            match slf.validate(config) {
+                Ok(_) => {
+                    TOKEN.set(Some(slf)).unwrap();
+                    Ok(Some(TOKEN.get().unwrap().as_ref().unwrap()))
+                }
+                Err(err) => {
+                    eprintln!("Token Validation Error: {err}");
+                    TOKEN.set(None).unwrap();
+                    Ok(None)
+                }
             }
-            Err(err) => {
-                eprintln!("Token Validation Error: {err}");
-                TOKEN.set(None).unwrap();
-                Ok(None)
-            }
+        } else {
+            Ok(Some(TOKEN.get().unwrap().as_ref().unwrap()))
         }
     }
 

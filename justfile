@@ -50,7 +50,7 @@ build-install:
 
     sudo cp target/release/rauthy-nss /usr/local/sbin/
 
-    sudo cp templates/rauthy-nss.service /etc/systemd/system/
+    sudo cp templates/authselect/rauthy-nss.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl start rauthy-nss
     sudo systemctl status rauthy-nss
@@ -124,16 +124,16 @@ install-nss:
      sudo cp target/release/librauthy_nss.so /usr/lib64/libnss_rauthy.so.2
      sudo cp target/release/librauthy_nss.so /lib/libnss_rauthy.so.2
 
-# copies templates/system-auth to /etc/authselect/custom/rauthy/system-auth and re-applies it
+# copies templates/authselect/ to /etc/authselect/custom/rauthy/system-auth and re-applies it
 update-authselect:
     #!/usr/bin/env bash
     set -euxo pipefail
 
     # Expects an already created custom authselect profile named `rauthy`
 
-    sudo cp templates/system-auth /etc/authselect/custom/rauthy/system-auth
-    sudo cp templates/password-auth /etc/authselect/custom/rauthy/password-auth
-    sudo cp templates/nsswitch.conf /etc/authselect/custom/rauthy/nsswitch.conf
+    sudo cp templates/authselect/system-auth /etc/authselect/custom/rauthy/system-auth
+    sudo cp templates/authselect/password-auth /etc/authselect/custom/rauthy/password-auth
+    sudo cp templates/authselect/nsswitch.conf /etc/authselect/custom/rauthy/nsswitch.conf
     sudo authselect select custom/rauthy
 
 # run the code using `pamtester`

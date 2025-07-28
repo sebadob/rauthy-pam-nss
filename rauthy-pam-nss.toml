@@ -39,9 +39,29 @@ cache_flush_interval = 900
 # contents into a newly created home dir for a user.
 #
 # default: not set
-home_dir_skel = '/etc/skel_rauthy'
+#home_dir_skel = '/etc/skel_rauthy'
 
 # The data path where short-lived login tokens will be stored.
 #
 # default: '/var/lib/pam_rauthy'
 #data_path = '/var/lib/pam_rauthy'
+
+# You can execute custom scripts on session open / close.
+# For the session open, it will be executed as the very last
+# step, after the home dir was created. This can be used for
+# instance to mount user home dirs via NFS or things like that.
+#
+# You cannot specify a complex command with options and must
+# provide only the path to a script. Arguments will be
+# automatically added in the following order:
+#
+# ./my_script.sh <username> <uid> <gid> <rauthy_user_id> <rauthy_user_email>
+#
+# CAUTION: These scripts will be executed as `root`!
+# You MUST MAKE SURE that only `root` can modify them!
+# -> `chmod 0700 path/to/script`
+#
+# NOTE: These scripts will only be executed during local login
+# or sshd login, but NOT when you e.g. do an `su - <user>`.
+exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
+exec_session_close = '/var/lib/pam_rauthy/session_close.sh'

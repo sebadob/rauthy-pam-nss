@@ -23,6 +23,8 @@ pub struct Config {
     #[serde(default = "data_path")]
     pub data_path: PathBuf,
     pub home_dir_skel: Option<PathBuf>,
+    pub exec_session_open: Option<PathBuf>,
+    pub exec_session_close: Option<PathBuf>,
 }
 
 #[inline]
@@ -84,8 +86,10 @@ impl Config {
         let slf = toml::from_str::<Self>(&content)?;
 
         // make sure data path exists and perms are correct
-        fs::create_dir_all(&slf.data_path)?;
-        fs::set_permissions(&slf.data_path, Permissions::from_mode(0o600))?;
+        if !fs::exists(&slf.data_path)? {
+            fs::create_dir_all(&slf.data_path)?;
+            fs::set_permissions(&slf.data_path, Permissions::from_mode(0o700))?;
+        }
 
         Ok(slf)
     }
