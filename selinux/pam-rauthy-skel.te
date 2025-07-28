@@ -1,0 +1,12 @@
+module pam-rauthy-skel 1.0;
+
+require {
+	type etc_t;
+	type home_root_t;
+	type init_t;
+	class file { create open setattr write };
+}
+
+#============= init_t ==============
+allow init_t etc_t:file setattr;
+allow init_t home_root_t:file { create open setattr write };

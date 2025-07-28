@@ -35,6 +35,12 @@ cache_ttl_users = 5
 # default: 900
 cache_flush_interval = 900
 
+# If you provide a path to a skel dir, the PAM module will copy the
+# contents into a newly created home dir for a user.
+#
+# default: not set
+home_dir_skel = '/etc/skel_rauthy'
+
 # The data path where short-lived login tokens will be stored.
 #
 # default: '/var/lib/pam_rauthy'

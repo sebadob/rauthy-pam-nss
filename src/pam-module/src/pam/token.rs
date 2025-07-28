@@ -1,11 +1,11 @@
 use crate::config::Config;
-use crate::{CLIENT, RT};
+use crate::{CLIENT, RT, copy_dir};
 use chrono::Utc;
 use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::Permissions;
-use std::os::unix::fs::{PermissionsExt, chown};
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
 static TOKEN: OnceLock<Option<PamToken>> = OnceLock::new();
@@ -24,12 +24,28 @@ pub struct PamToken {
 }
 
 impl PamToken {
-    pub fn create_home_dir(&self) {
-        let path = format!("/home/{}", self.username);
-        fs::create_dir_all(&path).expect("Cannot create user homedir");
-        chown(&path, Some(self.uid), Some(self.gid)).expect("Cannot set user:group for home dir");
-        fs::set_permissions(&path, Permissions::from_mode(0o700))
-            .expect("Cannot set permissions for new user homedir");
+    pub fn create_home_dir(&self) -> anyhow::Result<()> {
+        let path = PathBuf::from("/home").join(&self.username);
+
+        if !fs::exists(&path)? {
+            fs::create_dir_all(&path).expect("Cannot create user homedir");
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::{PermissionsExt, chown};
+
+                chown(&path, Some(self.uid), Some(self.gid))
+                    .expect("Cannot set user:group for home dir");
+                fs::set_permissions(&path, Permissions::from_mode(0o700))
+                    .expect("Cannot set permissions for new user homedir");
+            }
+
+            if let Some(skel) = &Config::read()?.home_dir_skel {
+                copy_dir::recursive_copy_dir_all(skel, &path, Some(self.uid), Some(self.gid))?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn try_load(config: &Config, username: &str) -> anyhow::Result<Option<&'static Self>> {
@@ -42,7 +58,7 @@ impl PamToken {
         }
 
         let base = config.data_path_user(username);
-        let path = format!("{base}/token");
+        let path = base.join("token");
 
         let bytes = fs::read(path)?;
         let (slf, _) =
@@ -64,7 +80,7 @@ impl PamToken {
     #[inline]
     pub fn save(&self, config: &Config) -> anyhow::Result<()> {
         let base = config.data_path_user(&self.username);
-        let path = format!("{base}/token");
+        let path = base.join("token");
 
         let bytes = bincode::serde::encode_to_vec(self, bincode::config::standard())?;
         fs::write(path, bytes)?;

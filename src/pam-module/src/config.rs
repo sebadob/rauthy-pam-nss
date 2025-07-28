@@ -2,11 +2,11 @@ use crate::pam::sys_err;
 use pamsm::{Pam, PamError};
 use reqwest::Url;
 use serde::Deserialize;
-use std::borrow::Cow;
 use std::fs;
 use std::fs::{File, Permissions};
 use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
 // TODO change path + data to the same location as the proxy to re-use it
@@ -21,18 +21,19 @@ pub struct Config {
     pub host_id: String,
     pub host_secret: String,
     #[serde(default = "data_path")]
-    pub data_path: Cow<'static, str>,
+    pub data_path: PathBuf,
+    pub home_dir_skel: Option<PathBuf>,
 }
 
 #[inline]
-fn data_path() -> Cow<'static, str> {
+fn data_path() -> PathBuf {
     "/var/lib/pam_rauthy".into()
 }
 
 impl Config {
     #[inline]
-    pub fn data_path_user(&self, username: &str) -> String {
-        let path = format!("{}/{}", self.data_path, username);
+    pub fn data_path_user(&self, username: &str) -> PathBuf {
+        let path = self.data_path.join(username);
 
         // these should never panic, when we were able to create and parse config beforehand
         fs::create_dir_all(&path).expect("Cannot create user data dir");
@@ -83,8 +84,8 @@ impl Config {
         let slf = toml::from_str::<Self>(&content)?;
 
         // make sure data path exists and perms are correct
-        fs::create_dir_all(slf.data_path.as_ref())?;
-        fs::set_permissions(slf.data_path.as_ref(), Permissions::from_mode(0o600))?;
+        fs::create_dir_all(&slf.data_path)?;
+        fs::set_permissions(&slf.data_path, Permissions::from_mode(0o600))?;
 
         Ok(slf)
     }

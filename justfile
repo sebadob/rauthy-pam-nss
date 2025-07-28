@@ -79,6 +79,11 @@ apply-selinux ty="local":
         checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te
         semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp
         sudo semodule -i rauthy-nss-uds-access.pp
+    elif [[ {{ ty }} == "skel" ]]; then
+        echo 'Building and applying SELinux rules for skel dir copy'
+        checkmodule -M -m -o pam-rauthy-skel.mod pam-rauthy-skel.te
+        semodule_package -m pam-rauthy-skel.mod -o pam-rauthy-skel.pp
+        sudo semodule -i pam-rauthy-skel.pp
     elif [[ {{ ty }} == "ssh" ]]; then
         echo 'Building and applying SELinux rules for ssh login'
         checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te
