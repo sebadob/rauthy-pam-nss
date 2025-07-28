@@ -4,10 +4,9 @@ require {
 	type etc_t;
 	type home_root_t;
 	type init_t;
-	type unconfined_t;
 	type var_lib_t;
 
-	class file { create entrypoint execute open setattr write };
+	class file { create execute open setattr write };
 }
 
 #============= init_t ==============
@@ -15,6 +14,3 @@ allow init_t etc_t:file setattr;
 allow init_t home_root_t:file { create open setattr write };
 # needed for exec_session_open / exec_session_close
 allow init_t var_lib_t:file execute;
-
-#============= unconfined_t ==============
-allow unconfined_t var_lib_t:file entrypoint;
