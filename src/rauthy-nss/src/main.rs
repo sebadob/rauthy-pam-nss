@@ -1,6 +1,6 @@
 use crate::cache::Cache;
 use crate::config::{CONFIG_PATH, Config};
-use log::info;
+use log::{error, info};
 use std::sync::atomic::AtomicBool;
 
 mod api_types;
@@ -14,6 +14,7 @@ mod http_client;
 mod logging;
 mod server;
 mod utils;
+mod whoami;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -49,6 +50,9 @@ fn main() -> anyhow::Result<()> {
 
         health_check::wait_until_healthy().await;
         health_check::spawn_health_checker();
+        if let Err(err) = whoami::whoami().await {
+            error!("Whoami error: {err}");
+        }
 
         server::run().await
     })?;

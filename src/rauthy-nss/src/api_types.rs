@@ -81,6 +81,11 @@ pub struct GetentRequest<'a> {
     pub getent: &'a Getent,
 }
 
+#[derive(Debug, Serialize)]
+pub struct HostWhoamiRequest<'a> {
+    pub host_secret: &'a str,
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostResponse {
@@ -90,9 +95,20 @@ pub struct HostResponse {
     pub addresses: Vec<IpAddr>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HostDetailsResponse {
+    pub id: String,
+    pub hostname: String,
+    pub gid: u32,
+    pub force_mfa: bool,
+    pub notes: Option<String>,
+    pub ips: Vec<IpAddr>,
+    pub aliases: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum PamGroupType {
+pub enum GroupType {
     Immutable,
     Host,
     User,
@@ -104,7 +120,7 @@ pub enum PamGroupType {
 pub struct GroupResponse {
     pub id: u32,
     pub name: String,
-    pub typ: PamGroupType,
+    pub typ: GroupType,
     pub members: Vec<String>,
 }
 

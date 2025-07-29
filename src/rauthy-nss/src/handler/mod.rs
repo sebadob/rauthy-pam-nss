@@ -1,4 +1,4 @@
-use crate::api_types::{Getent, GetentResponse, PamGroupType};
+use crate::api_types::{Getent, GetentResponse, GroupType};
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::error::{Error, ErrorType};
@@ -112,7 +112,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
             GetentResponse::Groups(mut groups) => {
                 if let Some(locals) = GroupLocal::read().await? {
                     for group in groups.iter_mut() {
-                        if group.typ == PamGroupType::Local {
+                        if group.typ == GroupType::Local {
                             match locals.get(&group.name) {
                                 None => {
                                     warn!("Local Group {} not found", group.name);
@@ -131,7 +131,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
                 GetentResponse::Groups(groups)
             }
             GetentResponse::Group(mut group) => {
-                if group.typ == PamGroupType::Local
+                if group.typ == GroupType::Local
                     && let Some(local) = GroupLocal::read_id(&group.name).await?
                 {
                     group.id = local.id;
