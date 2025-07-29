@@ -24,14 +24,12 @@ pub async fn whoami() -> Result<(), Error> {
         info!(
             r#"This Host:
 
-host_id:   {}
 hostname:  {}
 force MFA: {}
 ips:       {:?}
 aliases:   {:?}
 notes:     {}
 "#,
-            resp.id,
             resp.hostname,
             resp.force_mfa,
             resp.ips,
