@@ -1,0 +1,20 @@
+
+module nss-rauthy-kvm 1.0;
+
+require {
+	type unconfined_service_t;
+	type http_cache_port_t;
+	type virtqemud_t;
+	type var_run_t;
+	type etc_t;
+	class file setattr;
+	class tcp_socket name_connect;
+	class sock_file write;
+	class unix_stream_socket connectto;
+}
+
+#============= virtqemud_t ==============
+allow virtqemud_t etc_t:file setattr;
+allow virtqemud_t http_cache_port_t:tcp_socket name_connect;
+allow virtqemud_t unconfined_service_t:unix_stream_socket connectto;
+allow virtqemud_t var_run_t:sock_file write;

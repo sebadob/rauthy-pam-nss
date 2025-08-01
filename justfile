@@ -1,7 +1,12 @@
 set shell := ["bash", "-uc"]
 
 export MSRV := `cat Cargo.toml | grep '^rust-version =' | cut -d " " -f3 | xargs`
+export VERSION := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
+docker := `echo ${DOCKER:-docker}`
+map_docker_user := if docker == "podman" { "" } else { "-u $USER" }
+container_image := "almalinux:10-kitten"
+install_dir := "install/rauthy-pam-nss-install"
 pam_file := "rauthy-test"
 test_user := "sebadob"
 
@@ -55,6 +60,30 @@ build-install:
     sudo systemctl start rauthy-nss
     sudo systemctl status rauthy-nss
 
+# does everything necessary to build the install/rauthy-pam-nss-install dir
+build-install-archive:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    test -f {{ install_dir }}/LICENSE && rm -rf {{ install_dir }}
+    mkdir -p {{ install_dir }}
+
+    # TODO should be done inside a container with lower ldd version
+    cargo build --release
+    cp target/release/rauthy-nss install/rauthy-pam-nss-install/
+    cp target/release/librauthy_pam.so install/rauthy-pam-nss-install/pam_rauthy.so
+    cp target/release/librauthy_nss.so install/rauthy-pam-nss-install/libnss_rauthy.so.2
+
+    cp LICENSE {{ install_dir }}/LICENSE
+    echo $VERSION > {{ install_dir }}/VERSION
+
+    cp install.sh {{ install_dir }}/install.sh
+    cp rauthy-pam-nss.toml {{ install_dir }}/rauthy-pam-nss.toml
+
+    cp -r templates/authselect {{ install_dir }}/authselect
+    cp -r templates/session_scripts {{ install_dir }}/session_scripts
+    cp -r selinux {{ install_dir }}/selinux
+
 # build the SELinux module from selinux/ and apply it (ty == local / nis / nss / ssh)
 apply-selinux ty="local":
     #!/usr/bin/env bash
@@ -62,37 +91,46 @@ apply-selinux ty="local":
 
     cd selinux
 
+    checkmodule -M -m -o rauthy-pam-nss.mod rauthy-pam-nss.te && \
+    semodule_package -m rauthy-pam-nss.mod -o rauthy-pam-nss.pp && \
+    semodule -i rauthy-pam-nss.pp
+
     if [[ {{ ty }} == "local" ]]; then
         echo 'Building and applying SELinux rules for local login'
-        checkmodule -M -m -o pam-rauthy-local.mod pam-rauthy-local.te
-        semodule_package -m pam-rauthy-local.mod -o pam-rauthy-local.pp
+        checkmodule -M -m -o pam-rauthy-local.mod pam-rauthy-local.te && \
+        semodule_package -m pam-rauthy-local.mod -o pam-rauthy-local.pp && \
         sudo semodule -i pam-rauthy-local.pp
     elif [[ {{ ty }} == "gdm" ]]; then
         echo 'Building and applying SELinux rules for gdm login'
-        checkmodule -M -m -o pam-rauthy-gdm.mod pam-rauthy-gdm.te
-        semodule_package -m pam-rauthy-gdm.mod -o pam-rauthy-gdm.pp
+        checkmodule -M -m -o pam-rauthy-gdm.mod pam-rauthy-gdm.te && \
+        semodule_package -m pam-rauthy-gdm.mod -o pam-rauthy-gdm.pp && \
         sudo semodule -i pam-rauthy-gdm.pp
+    elif [[ {{ ty }} == "kvm" ]]; then
+        echo 'Building and applying SELinux rules for kvm'
+        checkmodule -M -m -o nss-rauthy-kvm.mod nss-rauthy-kvm.te && \
+        semodule_package -m nss-rauthy-kvm.mod -o nss-rauthy-kvm.pp && \
+        sudo semodule -i nss-rauthy-kvm.pp
     elif [[ {{ ty }} == "nis" ]]; then
         setsebool -P nis_enabled 1
     elif [[ {{ ty }} == "nss" ]]; then
         echo 'Building and applying SELinux rules for NSS lookups'
-        checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te
-        semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp
+        checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te && \
+        semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp && \
         sudo semodule -i rauthy-nss-uds-access.pp
     elif [[ {{ ty }} == "script" ]]; then
         echo 'Building and applying SELinux rules for skel dir copy'
-        checkmodule -M -m -o pam-rauthy-script.mod pam-rauthy-script.te
-        semodule_package -m pam-rauthy-script.mod -o pam-rauthy-script.pp
+        checkmodule -M -m -o pam-rauthy-script.mod pam-rauthy-script.te && \
+        semodule_package -m pam-rauthy-script.mod -o pam-rauthy-script.pp && \
         sudo semodule -i pam-rauthy-script.pp
     elif [[ {{ ty }} == "skel" ]]; then
         echo 'Building and applying SELinux rules for skel dir copy'
-        checkmodule -M -m -o pam-rauthy-skel.mod pam-rauthy-skel.te
-        semodule_package -m pam-rauthy-skel.mod -o pam-rauthy-skel.pp
+        checkmodule -M -m -o pam-rauthy-skel.mod pam-rauthy-skel.te && \
+        semodule_package -m pam-rauthy-skel.mod -o pam-rauthy-skel.pp && \
         sudo semodule -i pam-rauthy-skel.pp
     elif [[ {{ ty }} == "ssh" ]]; then
         echo 'Building and applying SELinux rules for ssh login'
-        checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te
-        semodule_package -m pam-rauthy-ssh.mod -o pam-rauthy-ssh.pp
+        checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te && \
+        semodule_package -m pam-rauthy-ssh.mod -o pam-rauthy-ssh.pp && \
         sudo semodule -i pam-rauthy-ssh.pp
     fi
 

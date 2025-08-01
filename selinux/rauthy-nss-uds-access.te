@@ -30,30 +30,19 @@ require {
 }
 
 #============= abrt_t ==============
-#allow abrt_t self:capability sys_admin;
-#allow abrt_t user_tmp_t:sock_file write;
 allow abrt_t var_run_t:sock_file write;
 allow abrt_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= abrt_dump_oops_t ==============
-#allow abrt_dump_oops_t self:capability sys_admin;
 allow abrt_dump_oops_t unconfined_t:unix_stream_socket connectto;
 allow abrt_dump_oops_t unconfined_service_t:unix_stream_socket connectto;
-#allow abrt_dump_oops_t user_tmp_t:sock_file write;
 allow abrt_dump_oops_t var_run_t:sock_file write;
 
 
 #============= auditd_t ==============
-#allow auditd_t etc_t:file setattr;
-#allow auditd_t var_lib_t:dir setattr;
 allow auditd_t var_run_t:sock_file write;
 allow auditd_t unconfined_service_t:unix_stream_socket connectto;
-
-
-#============= init_t ==============
-#allow init_t http_cache_port_t:tcp_socket name_connect;
-allow init_t unconfined_service_t:unix_stream_socket connectto;
 
 
 #============= geoclue_t ==============
@@ -77,7 +66,6 @@ allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
 
 #============= policykit_t ==============
 allow policykit_t var_run_t:sock_file write;
-#allow policykit_t policykit_auth_t:process noatsecure;
 allow policykit_t unconfined_service_t:unix_stream_socket connectto;
 
 
@@ -86,13 +74,10 @@ allow systemd_userdbd_t var_run_t:sock_file write;
 allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
 
 
+# TODO: Produces AST parse issues on fresh almalinux
 #============= systemd_user_runtimedir_t ==============
-#allow systemd_user_runtimedir_t config_home_t:dir read;
-#allow systemd_user_runtimedir_t config_home_t:file unlink;
 allow systemd_user_runtimedir_t devlog_t:lnk_file read;
 allow systemd_user_runtimedir_t devlog_t:sock_file write;
-#allow systemd_user_runtimedir_t etc_t:file setattr;
-#allow systemd_user_runtimedir_t self:capability net_admin;
 allow systemd_user_runtimedir_t unconfined_service_t:unix_stream_socket connectto;
 allow systemd_user_runtimedir_t var_lib_t:dir setattr;
 allow systemd_user_runtimedir_t var_run_t:sock_file write;

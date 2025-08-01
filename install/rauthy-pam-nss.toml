@@ -1,0 +1,66 @@
+# Base URL of your Rauthy deployment.
+rauthy_url = "{{ rauthy_url }}"
+
+# Access credentials for this host.
+host_id = "{{ rauthy_host_id }}"
+host_secret = "{{ rauthy_host_secret }}"
+
+# console | file | console_file | syslog
+log_target = "file"
+
+# !!! DO NOT USE IN PRODUCTION !!!
+#
+# Not allowing insecure requests in production is probably the most important
+# thing. If an attacker is able to spoof responses from Rauthy, account
+# and server takeover would be super easy. Always encrypt these queries!
+#danger_allow_insecure = false
+
+# Most servers should be absolutely fine with a single worker.
+# Only when you have a huge amount of conrurent users, you may increase it,
+# if you experience smaller latency issues.
+workers = 1
+
+# Cache TTLS in seconds. Should never be below 5.
+# Some command combinations, especially those with `sudo` and similar,
+# fire many queries consecutively very quickly.
+#
+# default: 30
+cache_ttl_groups = 30
+cache_ttl_hosts = 30
+cache_ttl_users = 30
+
+# The interval in seconds to flush / cleanup the cache.
+#
+# default: 900
+cache_flush_interval = 900
+
+# If you provide a path to a skel dir, the PAM module will copy the
+# contents into a newly created home dir for a user.
+#
+# default: not set
+home_dir_skel = '/etc/skel_rauthy'
+
+# The data path where short-lived login tokens will be stored.
+#
+# default: '/var/lib/pam_rauthy'
+data_path = '/var/lib/pam_rauthy'
+
+# You can execute custom scripts on session open / close.
+# For the session open, it will be executed as the very last
+# step, after the home dir was created. This can be used for
+# instance to mount user home dirs via NFS or things like that.
+#
+# You cannot specify a complex command with options and must
+# provide only the path to a script. Arguments will be
+# automatically added in the following order:
+#
+# ./my_script.sh <username> <uid> <gid> <rauthy_user_id> <rauthy_user_email>
+#
+# CAUTION: These scripts will be executed as `root`!
+# You MUST MAKE SURE that only `root` can modify them!
+# -> `chmod 0700 path/to/script`
+#
+# NOTE: These scripts will only be executed during local login
+# or sshd login, but NOT when you e.g. do an `su - <user>`.
+#exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
+#exec_session_close = '/var/lib/pam_rauthy/session_close.sh'

@@ -33,12 +33,17 @@ pub struct Config {
     // #[serde(default = "data_path")]
     // pub data_dir: Cow<'static, str>,
     pub log_target: LogTarget,
+    #[serde(default = "bool_false")]
     pub danger_allow_insecure: bool,
     pub workers: usize,
     pub cache_ttl_groups: u32,
     pub cache_ttl_hosts: u32,
     pub cache_ttl_users: u32,
     pub cache_flush_interval: u64,
+}
+
+fn bool_false() -> bool {
+    false
 }
 
 impl Default for Config {
@@ -52,9 +57,9 @@ impl Default for Config {
             log_target: LogTarget::Syslog,
             danger_allow_insecure: false,
             workers: 1,
-            cache_ttl_groups: 60,
-            cache_ttl_hosts: 60,
-            cache_ttl_users: 60,
+            cache_ttl_groups: 30,
+            cache_ttl_hosts: 30,
+            cache_ttl_users: 30,
             cache_flush_interval: 900,
         }
     }
