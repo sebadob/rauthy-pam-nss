@@ -38,7 +38,13 @@ mv() {
 #  done
 #}
 
-sed () {
+restorecon() {
+  if command restorecon; then
+    /usr/sbin/restorecon -r "$1"
+  fi
+}
+
+sed() {
   /usr/bin/sed "$@"
 }
 
@@ -91,6 +97,7 @@ createConfig () {
   fi
   cp rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml
   chmod 0600 /etc/rauthy/rauthy-pam-nss.toml
+  restorecon /etc/rauthy
 
   echo ""
   read -p "Rauthy URL (format: https://rauthy.example.com): " URL
@@ -126,6 +133,7 @@ This MUST NEVER be used in production!
   chmod 755 /var/lib/pam_rauthy
   cp session_scripts/session_* /var/lib/pam_rauthy/
   chmod 700 /var/lib/pam_rauthy/session_*
+  restorecon /var/lib/pam_rauthy
 
   cp -r /etc/skel /etc/skel_rauthy
 
@@ -149,6 +157,7 @@ installSELinux() {
 
   /usr/bin/checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
   /usr/bin/semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
+  # TODO maybe just use the pre-built module and skip installing tools?
   /usr/sbin/semodule -i selinux/rauthy-pam-nss.pp
 
   echo "SEModule named rauthy-pam-nss installed and nis_enabled boolean set"
@@ -170,6 +179,8 @@ will already be persistent.
   echo "Installing rauthy-nss service"
   cp rauthy-nss /usr/local/sbin/
   chmod 755 /usr/local/sbin/rauthy-nss
+  restorecon /usr/local/sbin/rauthy-nss
+
   cp authselect/rauthy-nss.service /etc/systemd/system/rauthy-nss.service
   systemctl daemon-reload
   systemctl enable rauthy-nss --now
@@ -177,6 +188,7 @@ will already be persistent.
   echo "Creating nsswitch.conf backup and copying template"
   cp /etc/nsswitch.conf /etc/nsswitch.conf.$(date +%s)
   cp authselect/nsswitch.conf /etc/nsswitch.conf
+  restorecon /etc/nsswitch.conf
 
   SUCCESS=false
   for i in {1..10}; do
