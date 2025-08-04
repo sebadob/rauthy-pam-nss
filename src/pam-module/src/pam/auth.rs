@@ -307,7 +307,9 @@ impl RauthyPam {
                     sys_err(pamh, &format!("Error saving PAM token: {err}"));
                 }
 
-                // token.create_home_dir();
+                // token
+                //     .create_home_dir()
+                //     .expect("Cannot create user home dir");
 
                 Ok(())
             }

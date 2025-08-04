@@ -30,18 +30,6 @@ mv() {
   /usr/bin/mv "$@"
 }
 
-#readYes() {
-#  while [ true ]; do
-#    /usr/bin/read -p "$1" VALUE
-#    echo "value: $VALUE"
-#    if [ $VALUE == [yY][eE][sS] || $VALUE == [yY] ]; then
-#      return 0
-#    elif [ $VALUE == [nN] || $VALUE == [nN][oO] ]; then
-#      exit 1
-#    fi
-#  done
-#}
-
 restorecon() {
   if command restorecon; then
     /usr/sbin/restorecon -r "$1"
@@ -68,29 +56,36 @@ test() {
   /usr/bin/test "$@"
 }
 
-isRoot () {
+isRoot() {
   if [ `/usr/bin/whoami` != 'root' ]; then
       echo "This script must be executed as root" 1>&2
       exit 100
   fi
 }
 
-installTools () {
-  echo 'Installing necessary tools'
-
-  if command dnf; then
-    # SELinux may not be installed
-    if command getenforce; then
-      # works on RHEL10, not tested on lower versions
-      /usr/bin/dnf install checkpolicy setools-console
-    fi
-  elif command apt; then
-    #/usr/bin/apt install blabla
-    echo "Debian based distros have not been tested yet"
-  else
-    echo "Your distro has not been tested yet"
+is_x86_64() {
+  if [[ $(uname -m) != "x86_64" ]]; then
+    echo "Currently, only x86_64 is supported. You need to build from source for other platforms."
+    exit 1
   fi
 }
+
+#installTools () {
+#  echo 'Installing necessary tools'
+#
+#  if command dnf; then
+#    # SELinux may not be installed
+#    if command getenforce; then
+#      # works on RHEL10, not tested on lower versions
+#      /usr/bin/dnf install checkpolicy policycoreutils-python-utils setools-console
+#    fi
+#  elif command apt; then
+#    #/usr/bin/apt install ...
+#    echo "Debian based distros have not been tested yet"
+#  else
+#    echo "Your distro has not been tested yet"
+#  fi
+#}
 
 createConfig () {
   mkdir /etc/rauthy
@@ -159,8 +154,8 @@ installSELinux() {
 
   /usr/sbin/setsebool -P nis_enabled 1
 
-  /usr/bin/checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
-  /usr/bin/semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
+  #/usr/bin/checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
+  #/usr/bin/semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
   # TODO maybe just use the pre-built module and skip installing tools?
   /usr/sbin/semodule -i selinux/rauthy-pam-nss.pp
 
@@ -181,11 +176,24 @@ will already be persistent.
   systemctl stop rauthy-nss || echo 'rauthy-nss service not running'
 
   echo "Installing rauthy-nss service"
-  cp rauthy-nss /usr/local/sbin/
+  ARCH=$(uname -m)
+  if [[ $ARCH == "x86_64" ]];then
+    cp x86_64/rauthy-nss /usr/local/sbin/
+    cp -f x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+  elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
+    cp aarch64/rauthy-nss /usr/local/sbin/
+    cp -f aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+  else
+    echo "Unsupported architecture"
+    exit 1
+  fi
+  if ! test -f /lib/libnss_rauthy.so.2; then
+    ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
+  fi
   chmod 755 /usr/local/sbin/rauthy-nss
   restorecon /usr/local/sbin/rauthy-nss
 
-  cp authselect/rauthy-nss.service /etc/systemd/system/rauthy-nss.service
+  cp rauthy-nss.service /etc/systemd/system/rauthy-nss.service
   systemctl daemon-reload
   systemctl enable rauthy-nss --now
 
@@ -292,8 +300,16 @@ configuration may lock you our of your system.
     fi
   done
 
-  cp -f pam_rauthy.so /lib64/security/pam_rauthy.so
-  ln -s /lib64/security/pam_rauthy.so /lib/security/pam_rauthy.so
+  ARCH=$(uname -m)
+  if [[ $ARCH == "x86_64" ]];then
+    cp x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
+  elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
+    cp aarch64/pam_rauthy.so /lib64/security/pam_rauthy.so
+  else
+    echo "Unsupported architecture"
+    exit 1
+  fi
+  chmod 755 /lib64/security/pam_rauthy.so
 
   if command authselect; then
     if ! test -f /etc/authselect/custom/rauthy/system-auth; then
@@ -359,8 +375,9 @@ out of your own system!
 }
 
 isRoot
+is_x86_64
 if [ "$1" == 'nss' ]; then
-  installTools
+#  installTools
   createConfig
   # TODO
   #installAppArmor

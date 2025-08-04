@@ -3,10 +3,15 @@ set shell := ["bash", "-uc"]
 export MSRV := `cat Cargo.toml | grep '^rust-version =' | cut -d " " -f3 | xargs`
 export VERSION := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
+builder_image := "ghcr.io/sebadob/rauthy-builder"
+builder_tag_date := "20250804"
+cargo_home := `echo ${CARGO_HOME:-$HOME/.cargo}`
+container_cargo_registry := "/usr/local/cargo/registry"
 docker := `echo ${DOCKER:-docker}`
 map_docker_user := if docker == "podman" { "" } else { "-u $USER" }
 container_image := "almalinux:10-kitten"
 install_dir := "install/rauthy-pam-nss-install"
+jemalloc_conf := "JEMALLOC_SYS_WITH_MALLOC_CONF=narenas:1"
 pam_file := "rauthy-test"
 test_user := "sebadob"
 
@@ -65,24 +70,57 @@ build-install-archive:
     #!/usr/bin/env bash
     set -euxo pipefail
 
+    test -f install/rauthy-pam-nss-install.tar.gz && rm -f install/rauthy-pam-nss-install.tar.gz
     test -f {{ install_dir }}/LICENSE && rm -rf {{ install_dir }}
     mkdir -p {{ install_dir }}
 
-    # TODO should be done inside a container with lower ldd version
-    cargo build --release
-    cp target/release/rauthy-nss install/rauthy-pam-nss-install/
-    cp target/release/librauthy_pam.so install/rauthy-pam-nss-install/pam_rauthy.so
-    cp target/release/librauthy_nss.so install/rauthy-pam-nss-install/libnss_rauthy.so.2
+    # x86_64
+    {{ docker }} run \
+        -v {{ cargo_home }}/registry:{{ container_cargo_registry }} \
+        -v {{ invocation_directory() }}/:/work/ \
+        -w /work \
+        -e {{ jemalloc_conf }} \
+        {{ map_docker_user }} \
+        {{ builder_image }}:{{ builder_tag_date }} \
+        cargo build --release --target x86_64-unknown-linux-gnu
+    mkdir -p {{ install_dir }}/x86_64
+    cp target/x86_64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/x86_64/
+    cp target/x86_64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/x86_64/pam_rauthy.so
+    cp target/x86_64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/x86_64/libnss_rauthy.so.2
 
+    # TODO the cross-compilation currently fails because of libudev
+    # aarch64
+    #{{ docker }} run \
+    #    -v {{ cargo_home }}/registry:{{ container_cargo_registry }} \
+    #    -v {{ invocation_directory() }}/:/work/ \
+    #    -w /work \
+    #    -e {{ jemalloc_conf }} \
+    #    {{ map_docker_user }} \
+    #    {{ builder_image }}:{{ builder_tag_date }} \
+    #    cargo build --release --target aarch64-unknown-linux-gnu
+    #mkdir -p {{ install_dir }}/aarch64
+    #cp target/aarch64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/aarch64/
+    #cp target/aarch64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/aarch64/pam_rauthy.so
+    #cp target/aarch64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/aarch64/libnss_rauthy.so.2
+
+    # copy other files + templates
     cp LICENSE {{ install_dir }}/LICENSE
     echo $VERSION > {{ install_dir }}/VERSION
 
-    cp install.sh {{ install_dir }}/install.sh
-    cp rauthy-pam-nss.toml {{ install_dir }}/rauthy-pam-nss.toml
+    cp install/install.sh {{ install_dir }}/install.sh
+    cp install/rauthy-pam-nss.toml {{ install_dir }}/rauthy-pam-nss.toml
 
     cp -r templates/authselect {{ install_dir }}/authselect
     cp -r templates/session_scripts {{ install_dir }}/session_scripts
-    cp -r selinux {{ install_dir }}/selinux
+    cp templates/systemd/rauthy-nss.service {{ install_dir }}/rauthy-nss.service
+
+    checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
+    semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
+    mkdir {{ install_dir }}/selinux
+    cp selinux/rauthy-pam-nss.* {{ install_dir }}/selinux
+
+    tar -czf install/rauthy-pam-nss-install.tar.gz -C install ./rauthy-pam-nss-install
+    git add install/rauthy-pam-nss-install.tar.gz
 
 # build the SELinux module from selinux/ and apply it (ty == local / nis / nss / ssh)
 apply-selinux ty="local":
@@ -90,10 +128,6 @@ apply-selinux ty="local":
     set -euxo pipefail
 
     cd selinux
-
-    checkmodule -M -m -o rauthy-pam-nss.mod rauthy-pam-nss.te && \
-    semodule_package -m rauthy-pam-nss.mod -o rauthy-pam-nss.pp && \
-    semodule -i rauthy-pam-nss.pp
 
     if [[ {{ ty }} == "local" ]]; then
         echo 'Building and applying SELinux rules for local login'

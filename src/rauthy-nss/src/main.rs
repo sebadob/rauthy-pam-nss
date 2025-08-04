@@ -16,6 +16,10 @@ mod server;
 mod utils;
 mod whoami;
 
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(debug_assertions)]

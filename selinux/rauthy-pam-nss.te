@@ -21,6 +21,7 @@ require {
 	type policykit_t;
 	type policykit_auth_t;
 	type sshd_t;
+	type systemd_logind_t;
 	type systemd_tmpfiles_t;
 	type systemd_userdbd_t;
 	type unconfined_t;
@@ -60,14 +61,14 @@ allow chkpwd_t var_run_t:sock_file write;
 
 #============= init_t ==============
 allow init_t etc_t:file setattr;
-allow init_t home_root_t:file { create open setattr write };
 allow init_t unconfined_service_t:unix_stream_socket connectto;
+# needed to be able to copy `skel_rauthy` dir into new home location
+allow init_t home_root_t:file { create open setattr write };
 # needed for exec_session_open / exec_session_close
 allow init_t var_lib_t:file execute;
 
 #============= local_login_t ==============
 allow local_login_t etc_t:file setattr;
-allow local_login_t home_root_t:dir setattr;
 allow local_login_t unlabeled_t:dir search;
 allow local_login_t useradd_exec_t:file { execute execute_no_trans };
 allow local_login_t var_lib_t:dir { create setattr };
@@ -77,10 +78,9 @@ allow local_login_t unconfined_service_t:unix_stream_socket connectto;
 
 #============= sshd_t ==============
 allow sshd_t etc_t:file setattr;
-allow sshd_t home_root_t:dir setattr;
 allow sshd_t user_home_dir_t:dir setattr;
 allow sshd_t unlabeled_t:file read;
-allow sshd_t var_lib_t:dir setattr;
+allow sshd_t var_lib_t:dir { create setattr };
 allow sshd_t var_lib_t:file { create getattr open read write };
 allow sshd_t var_run_t:sock_file write;
 allow sshd_t http_cache_port_t:tcp_socket name_connect;
@@ -127,6 +127,10 @@ allow policykit_t unconfined_service_t:unix_stream_socket connectto;
 allow policykit_auth_t var_run_t:sock_file write;
 allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
 
+#============= systemd_logind_t ==============
+allow systemd_logind_t var_run_t:sock_file write;
+allow systemd_logind_t unconfined_service_t:unix_stream_socket connectto;
+
 #============= systemd_userdbd_t ==============
 allow systemd_userdbd_t var_run_t:sock_file write;
 allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
@@ -163,7 +167,6 @@ allow NetworkManager_t var_run_t:sock_file write;
 
 #============= xdm_t ==============
 allow xdm_t etc_t:file setattr;
-allow xdm_t home_root_t:dir create;
 allow xdm_t init_var_lib_t:dir { getattr search };
 allow xdm_t var_lib_t:file write;
 allow xdm_t var_run_t:sock_file write;
