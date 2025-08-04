@@ -18,6 +18,10 @@ echo () {
   /usr/bin/echo "$1"
 }
 
+ln() {
+  /usr/bin/ln "$@"
+}
+
 mkdir() {
   /usr/bin/mkdir -p "$@"
 }
@@ -186,6 +190,9 @@ will already be persistent.
   systemctl enable rauthy-nss --now
 
   echo "Creating nsswitch.conf backup and copying template"
+  if ! test -f /etc/nsswitch.conf.bak-non-rauthy; then
+    cp /etc/nsswitch.conf /etc/nsswitch.conf.bak-non-rauthy
+  fi
   cp /etc/nsswitch.conf /etc/nsswitch.conf.$(date +%s)
   cp authselect/nsswitch.conf /etc/nsswitch.conf
   restorecon /etc/nsswitch.conf
@@ -274,12 +281,6 @@ Make sure that you have a backup terminal / session open
 in case you need to recover from a misconfiguration. DO NOT
 use this backup session for the actual testing, as a bad PAM
 configuration may lock you our of your system.
-
-If 'authselect' can be found, this setup is expecting that
-it's used for managing your PAM setup. It will create a
-custom profile for easy switching. If 'authselect' does not
-exist, the files will be copied into /etc/pam.d/ manually
-and backups of the existing ones will be created.
 "
 
   while [ true ]; do
@@ -291,9 +292,70 @@ and backups of the existing ones will be created.
     fi
   done
 
-  echo "TODO finish PAM setup"
+  cp -f pam_rauthy.so /lib64/security/pam_rauthy.so
+  ln -s /lib64/security/pam_rauthy.so /lib/security/pam_rauthy.so
 
-  exit 1
+  if command authselect; then
+    if ! test -f /etc/authselect/custom/rauthy/system-auth; then
+      /usr/bin/authselect create-profile -b=local rauthy
+    fi
+
+    cp authselect/system-auth /etc/authselect/custom/rauthy/
+    cp authselect/password-auth /etc/authselect/custom/rauthy/
+    cp authselect/nsswitch.conf /etc/authselect/custom/rauthy/
+
+    echo "
+Found 'authselect', assuming it is in use - created a custom profile in:
+/etc/authselect/custom/rauthy/
+
+This custom profile can be seen as a template. You should review the custom
+profile and apply any custom settings you might have set right now, before
+activating it.
+
+Available profiles:
+$(/usr/bin/authselect list)
+
+Current profile + features:
+$(/usr/bin/authselect current)
+
+Note down which profile + features you are on right now, so you can change
+back later on, if something goes wrong. After you have done that, the
+activation is up to you with:
+
+> authselect select custom/rauthy
+
+If everything else was set up correctly, and you activated the new authselect
+profile, PAM logins with Rauthy-managed accounts should be working. Test this
+in detail to make sure everything is fine, but KEEP A BACKUP SESSION open. A
+broken PAM setup can lock you out of your own system!
+"
+  else
+    echo "Creating backups of current files"
+    if ! test -f /etc/pam.d/system-auth.bak-non-rauthy; then
+      cp /etc/pam.d/system-auth /etc/pam.d/system-auth.bak-non-rauthy
+    fi
+    if ! test -f /etc/pam.d/password-auth.bak-non-rauthy; then
+      cp /etc/pam.d/password-auth /etc/pam.d/password-auth.bak-non-rauthy
+    fi
+
+    cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(date +%s)
+    cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(date +%s)
+
+    cp authselect/system-auth /etc/pam.d/system-auth
+    restorecon /etc/pam.d/system-auth
+    cp authselect/password-auth /etc/pam.d/password-auth
+    restorecon /etc/pam.d/password-auth
+
+    echo "
+Backups of the existing 'system-auth' and 'password-auth' were created
+and new files copied into /etc/pam.d/ .
+
+If everything else was set up correctly, PAM logins with Rauthy-managed
+accounts should be working now. Test this in detail to make sure everything
+is fine, but KEEP A BACKUP SESSION open. A broken PAM setup can lock you
+out of your own system!
+    "
+  fi
 }
 
 isRoot
