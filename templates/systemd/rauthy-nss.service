@@ -1,0 +1,16 @@
+[Unit]
+Description=Rauthy NSS Proxy
+After=network.target
+
+[Service]
+# `narenas:1` is fine when you run a single worker, but you may want
+# to increase this value up to 4x workers if you increase workers
+# because you have a lot of concurrency.
+Environment="MALLOC_CONF=narenas:1"
+ExecStart=/usr/local/sbin/rauthy-nss
+Type=exec
+Restart=always
+
+[Install]
+WantedBy=default.target
+RequiredBy=network.target

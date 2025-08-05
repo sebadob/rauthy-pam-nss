@@ -6,5 +6,5 @@ GROUP_ID=$3
 RAUTHY_USER_ID=$4
 RAUTHY_USER_EMAIL=$5
 
-# just an example command
+# just an example command - do something useful here
 echo "$(date) $USER_ID:$GROUP_ID $USERNAME $RAUTHY_USER_ID/$RAUTHY_USER_EMAIL - session close" >> /tmp/rauthy_dbg
