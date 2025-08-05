@@ -25,7 +25,7 @@ workers = 1
 # Some command combinations, especially those with `sudo` and similar,
 # fire many queries consecutively very quickly.
 #
-# default: 60
+# default: 30
 cache_ttl_groups = 5
 cache_ttl_hosts = 5
 cache_ttl_users = 5

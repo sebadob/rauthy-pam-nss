@@ -20,6 +20,7 @@ pub struct PamPreflightRequest {
 #[derive(Debug, Deserialize)]
 pub struct PamPreflightResponse {
     pub login_allowed: bool,
+    pub local_password_only: bool,
     pub mfa_required: bool,
 }
 

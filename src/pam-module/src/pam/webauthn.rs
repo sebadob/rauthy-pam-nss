@@ -94,7 +94,7 @@ impl PamWebauthn {
                     sys_err(pamh, &err);
                 }
                 PamReq::GetPin(ack) => loop {
-                    match pamh.get_authtok(Some("Enter PIN: ")).unwrap() {
+                    match pamh.get_authtok(Some("Passkey PIN: ")).unwrap() {
                         None => {
                             println!("PIN must not be empty");
                         }
