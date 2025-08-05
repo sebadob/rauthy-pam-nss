@@ -181,8 +181,10 @@ will already be persistent.
     cp x86_64/rauthy-nss /usr/local/sbin/
     cp -f x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
-    cp aarch64/rauthy-nss /usr/local/sbin/
-    cp -f aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+    echo "aarch64 / arm64 is supported, but needs manual compilation from source"
+    exit 1
+    #cp aarch64/rauthy-nss /usr/local/sbin/
+    #cp -f aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
   else
     echo "Unsupported architecture"
     exit 1
@@ -300,11 +302,28 @@ configuration may lock you our of your system.
     fi
   done
 
+  while [ true ]; do
+    read -p "Allow 'wheel-rauthy' members to use sudo? (yes / no): " VALUE
+    if [[ $VALUE == [yY][eE][sS] || $VALUE == [yY] ]]; then
+      if ! /usr/bin/grep ^%wheel-rauthy /etc/sudoers; then
+        echo "
+# Allow members of the wheel-rauthy group to use sudo
+%wheel-rauthy ALL=(ALL) ALL
+" >> /etc/sudoers
+      fi
+      break
+    elif [[ $VALUE == [nN][oO] || $VALUE == [n] ]]; then
+      break
+    fi
+  done
+
   ARCH=$(uname -m)
   if [[ $ARCH == "x86_64" ]];then
     cp x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
-    cp aarch64/pam_rauthy.so /lib64/security/pam_rauthy.so
+    echo "aarch64 / arm64 is supported, but needs manual compilation from source"
+    exit 1
+    #cp aarch64/pam_rauthy.so /lib64/security/pam_rauthy.so
   else
     echo "Unsupported architecture"
     exit 1
