@@ -46,7 +46,7 @@ require {
 	type xdm_t;
 
 	class dir { add_name create search getattr setattr search };
-	class file { create entrypoint execute execute_no_trans getattr open read setattr write };
+	class file { create entrypoint execute execute_no_trans getattr map open read setattr write };
 	class tcp_socket name_connect;
 	class sock_file write;
 	class unix_stream_socket connectto;
@@ -69,8 +69,10 @@ allow chkpwd_t rauthy_var_lib_t:dir setattr;
 allow chkpwd_t rauthy_var_run_t:sock_file write;
 
 #============= init_t ==============
-allow init_t rauthy_etc_t:file setattr;
+allow init_t rauthy_etc_t:file { open read setattr };
 allow init_t rauthy_exec_t:unix_stream_socket connectto;
+allow init_t rauthy_exec_t:file { execute execute_no_trans map open read };
+
 # needed to be able to copy `skel_rauthy` dir into new home location
 allow init_t home_root_t:file { create open setattr write };
 # needed for exec_session_open / exec_session_close
