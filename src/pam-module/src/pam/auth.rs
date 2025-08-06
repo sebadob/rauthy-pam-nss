@@ -53,7 +53,10 @@ impl RauthyPam {
         time::sleep(Duration::from_millis(100)).await;
 
         let (ui, _) = crate::pam::webauthn::UI.deref();
-        let authenticator = PamWebauthn::wait_for_passkey(ui).await;
+        let authenticator =
+            tokio::time::timeout(Duration::from_secs(20), PamWebauthn::wait_for_passkey(ui))
+                .await
+                .map_err(|_| "timed out".to_string())?;
 
         let url_start = format!("{origin}auth/v1/pam/mfa/start");
         let url_finish = format!("{origin}auth/v1/pam/mfa/finish");
