@@ -110,7 +110,7 @@ build-install-archive:
     cp install/install.sh {{ install_dir }}/install.sh
     cp install/rauthy-pam-nss.toml {{ install_dir }}/rauthy-pam-nss.toml
 
-    cp -r templates/authselect {{ install_dir }}/authselect
+    cp -r templates/pam {{ install_dir }}/pam
     cp -r templates/session_scripts {{ install_dir }}/session_scripts
     cp templates/systemd/rauthy-nss.service {{ install_dir }}/rauthy-nss.service
 

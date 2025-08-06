@@ -9,8 +9,6 @@ impl PasswdHooks for RauthyNss {
     fn get_all_entries() -> Response<Vec<Passwd>> {
         init_syslog();
 
-        info!("PasswdHooks get_all_entries");
-
         match send_getent!("/getent/users") {
             GetentResponse::Users(users) => {
                 let mut res = Vec::with_capacity(users.len());
@@ -61,8 +59,6 @@ impl PasswdHooks for RauthyNss {
 
     fn get_entry_by_name(name: String) -> Response<Passwd> {
         init_syslog();
-
-        info!("PasswdHooks get_entry_by_name {name}");
 
         match send_getent!(&format!("/getent/users/name/{name}")) {
             GetentResponse::User(user) => {

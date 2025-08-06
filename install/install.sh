@@ -7,7 +7,13 @@ chmod() {
 }
 
 command() {
-  /usr/bin/command -v $1 > /dev/null
+  if test -f /usr/bin/$1; then
+    return 0
+  elif test -f /usr/sbin/$1; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 cp() {
@@ -56,7 +62,7 @@ test() {
   /usr/bin/test "$@"
 }
 
-isRoot() {
+is_root() {
   if [ `/usr/bin/whoami` != 'root' ]; then
       echo "This script must be executed as root" 1>&2
       exit 100
@@ -68,6 +74,31 @@ is_x86_64() {
     echo "Currently, only x86_64 is supported. You need to build from source for other platforms."
     exit 1
   fi
+}
+
+is_debian() {
+  # we detect by package manager, which is far more reliable than trying to
+  # catch all existing distro names in a regex
+  if test -f/usr/bin/apt; then
+    echo "Detected Debian-based distro"
+    return 0
+  fi
+  return 1
+}
+
+is_rhel() {
+  # we detect by package manager, which is far more reliable than trying to
+  # catch all existing distro names in a regex
+  if test -f /usr/bin/dnf; then
+    echo "Detected RHEL-based distro"
+    return 0
+  fi
+  return 1
+}
+
+unknown_distro() {
+  echo "Unknown / unsupported distro - currently supported: RHEL, Debian"
+  exit 1
 }
 
 #installTools () {
@@ -145,7 +176,7 @@ installAppArmor () {
 }
 
 installSELinux() {
-  if ! command -v getenforce; then
+  if ! command getenforce; then
     echo "SELinux not found - skipping policy installation"
     return 0
   fi
@@ -153,10 +184,6 @@ installSELinux() {
   echo "Installing basic SELinux policies"
 
   /usr/sbin/setsebool -P nis_enabled 1
-
-  #/usr/bin/checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
-  #/usr/bin/semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
-  # TODO maybe just use the pre-built module and skip installing tools?
   /usr/sbin/semodule -i selinux/rauthy-pam-nss.pp
 
   echo "SEModule named rauthy-pam-nss installed and nis_enabled boolean set"
@@ -178,8 +205,20 @@ will already be persistent.
   echo "Installing rauthy-nss service"
   ARCH=$(uname -m)
   if [[ $ARCH == "x86_64" ]];then
+    # we don't want top put it in /usr/local/sbin to not need custom
+    # SELinux type_transitions when the service is being started
     cp x86_64/rauthy-nss /usr/local/sbin/
-    cp -f x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+
+    if is_rhel; then
+      cp -f x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+       if ! test -f /lib/libnss_rauthy.so.2; then
+         ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
+       fi
+    elif is_debian; then
+      cp -f x86_64/libnss_rauthy.so.2 /lib/x86_64-linux-gnu/libnss_rauthy.so.2
+    else
+      unknown_distro
+    fi
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
     echo "aarch64 / arm64 is supported, but needs manual compilation from source"
     exit 1
@@ -189,13 +228,12 @@ will already be persistent.
     echo "Unsupported architecture"
     exit 1
   fi
-  if ! test -f /lib/libnss_rauthy.so.2; then
-    ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
-  fi
   chmod 755 /usr/local/sbin/rauthy-nss
   restorecon /usr/local/sbin/rauthy-nss
 
+  echo "Copying systemd service file into place"
   cp rauthy-nss.service /etc/systemd/system/rauthy-nss.service
+  echo "Reloading daemon and enableing rauthy-nss.service"
   systemctl daemon-reload
   systemctl enable rauthy-nss --now
 
@@ -204,7 +242,13 @@ will already be persistent.
     cp /etc/nsswitch.conf /etc/nsswitch.conf.bak-non-rauthy
   fi
   cp /etc/nsswitch.conf /etc/nsswitch.conf.$(date +%s)
-  cp authselect/nsswitch.conf /etc/nsswitch.conf
+  if is_rhel; then
+    cp pam/rhel/nsswitch.conf /etc/nsswitch.conf
+  elif is_debian; then
+    cp pam/debian/nsswitch.conf /etc/nsswitch.conf
+  else
+    unknown_distro
+  fi
   restorecon /etc/nsswitch.conf
 
   SUCCESS=false
@@ -319,7 +363,22 @@ configuration may lock you our of your system.
 
   ARCH=$(uname -m)
   if [[ $ARCH == "x86_64" ]];then
-    cp x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
+
+    if is_rhel; then
+
+      cp x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
+      chmod 755 /lib64/security/pam_rauthy.so
+      restorecon /lib64/security/pam_rauthy.so
+
+    elif is_debian; then
+
+      cp x86_64/pam_rauthy.so /lib/x86_64-linux-gnu/security/pam_rauthy.so
+      chmod 755 /lib/x86_64-linux-gnu/security/pam_rauthy.so
+
+    else
+      unknown_distro
+    fi
+
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
     echo "aarch64 / arm64 is supported, but needs manual compilation from source"
     exit 1
@@ -328,16 +387,15 @@ configuration may lock you our of your system.
     echo "Unsupported architecture"
     exit 1
   fi
-  chmod 755 /lib64/security/pam_rauthy.so
 
   if command authselect; then
     if ! test -f /etc/authselect/custom/rauthy/system-auth; then
       /usr/bin/authselect create-profile -b=local rauthy
     fi
 
-    cp authselect/system-auth /etc/authselect/custom/rauthy/
-    cp authselect/password-auth /etc/authselect/custom/rauthy/
-    cp authselect/nsswitch.conf /etc/authselect/custom/rauthy/
+    cp pam/rhel/system-auth /etc/authselect/custom/rauthy/
+    cp pam/rhel/password-auth /etc/authselect/custom/rauthy/
+    cp pam/rhel/nsswitch.conf /etc/authselect/custom/rauthy/
 
     echo "
 Found 'authselect', assuming it is in use - created a custom profile in:
@@ -365,25 +423,54 @@ in detail to make sure everything is fine, but KEEP A BACKUP SESSION open. A
 broken PAM setup can lock you out of your own system!
 "
   else
-    echo "Creating backups of current files"
-    if ! test -f /etc/pam.d/system-auth.bak-non-rauthy; then
-      cp /etc/pam.d/system-auth /etc/pam.d/system-auth.bak-non-rauthy
-    fi
-    if ! test -f /etc/pam.d/password-auth.bak-non-rauthy; then
-      cp /etc/pam.d/password-auth /etc/pam.d/password-auth.bak-non-rauthy
-    fi
+    if is_rhel; then
 
-    cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(date +%s)
-    cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(date +%s)
+      if ! test -f /etc/pam.d/system-auth.bak-non-rauthy; then
+        cp /etc/pam.d/system-auth /etc/pam.d/system-auth.bak-non-rauthy
+      fi
+      if ! test -f /etc/pam.d/password-auth.bak-non-rauthy; then
+        cp /etc/pam.d/password-auth /etc/pam.d/password-auth.bak-non-rauthy
+      fi
 
-    cp authselect/system-auth /etc/pam.d/system-auth
-    restorecon /etc/pam.d/system-auth
-    cp authselect/password-auth /etc/pam.d/password-auth
-    restorecon /etc/pam.d/password-auth
+      cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(date +%s)
+      cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(date +%s)
+
+      cp pam/rhel/system-auth /etc/pam.d/system-auth
+      restorecon /etc/pam.d/system-auth
+      cp pam/rhel/password-auth /etc/pam.d/password-auth
+      restorecon /etc/pam.d/password-auth
+
+    elif is_debian; then
+
+      if ! test -f /etc/pam.d/common-auth.bak-non-rauthy; then
+        cp /etc/pam.d/common-auth /etc/pam.d/common-auth.bak-non-rauthy
+      fi
+      if ! test -f /etc/pam.d/common-password.bak-non-rauthy; then
+        cp /etc/pam.d/common-password /etc/pam.d/common-password.bak-non-rauthy
+      fi
+      if ! test -f /etc/pam.d/common-account.bak-non-rauthy; then
+        cp /etc/pam.d/common-account /etc/pam.d/common-account.bak-non-rauthy
+      fi
+      if ! test -f /etc/pam.d/common-session.bak-non-rauthy; then
+        cp /etc/pam.d/common-session /etc/pam.d/common-session.bak-non-rauthy
+      fi
+
+      cp /etc/pam.d/common-auth /etc/pam.d/common-auth.$(date +%s)
+      cp /etc/pam.d/common-password /etc/pam.d/common-password.$(date +%s)
+      cp /etc/pam.d/common-account /etc/pam.d/common-account.$(date +%s)
+      cp /etc/pam.d/common-session /etc/pam.d/common-session.$(date +%s)
+
+      cp pam/debian/common-auth /etc/pam.d/common-auth
+      cp pam/debian/common-password /etc/pam.d/common-password
+      cp pam/debian/common-account /etc/pam.d/common-account
+      cp pam/debian/common-session /etc/pam.d/common-session
+
+    else
+      unknown_distro
+    fi
 
     echo "
-Backups of the existing 'system-auth' and 'password-auth' were created
-and new files copied into /etc/pam.d/ .
+Backups of the existing rule were created and new files copied into /etc/pam.d/ .
 
 If everything else was set up correctly, PAM logins with Rauthy-managed
 accounts should be working now. Test this in detail to make sure everything
@@ -393,7 +480,7 @@ out of your own system!
   fi
 }
 
-isRoot
+is_root
 is_x86_64
 if [ "$1" == 'nss' ]; then
 #  installTools

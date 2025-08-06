@@ -1,0 +1,31 @@
+module rauthy-types 1.0;
+
+<!--######################################
+-->
+#
+#
+
+type rauthy_etc_t;
+files_type(rauthy_etc_t);
+
+<!--######################################
+-->
+#
+#
+
+require {
+    type local_login_t;
+    type rauthy_etc_t;
+
+    class file setattr
+}
+
+allow local_login_t rauthy_etc_t:file setattr;
+
+
+# rauthy_etc_t
+# rauthy_var_lib_t
+# rauthy_var_run_t
+
+# semanage fcontext -a -t etc_t -s system_u /etc/freetds.conf.new
+# restorecon -vF /etc/freetds.conf.new
