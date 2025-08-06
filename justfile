@@ -114,8 +114,11 @@ build-install-archive:
     cp -r templates/session_scripts {{ install_dir }}/session_scripts
     cp templates/systemd/rauthy-nss.service {{ install_dir }}/rauthy-nss.service
 
-    checkmodule -M -m -o selinux/rauthy-pam-nss.mod selinux/rauthy-pam-nss.te
-    semodule_package -m selinux/rauthy-pam-nss.mod -o selinux/rauthy-pam-nss.pp
+    cd selinux
+    make -f /usr/share/selinux/devel/Makefile
+    rm -rf tmp
+    git add *
+    cd ..
     mkdir {{ install_dir }}/selinux
     cp selinux/rauthy-pam-nss.* {{ install_dir }}/selinux
 

@@ -3,7 +3,6 @@ use crate::init_syslog;
 use crate::{RauthyNss, send_getent};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
-use log::info;
 
 impl PasswdHooks for RauthyNss {
     fn get_all_entries() -> Response<Vec<Passwd>> {

@@ -1,6 +1,18 @@
 
 module rauthy-pam-nss 1.0;
 
+type rauthy_etc_t;
+files_type(rauthy_etc_t);
+
+type rauthy_exec_t;
+files_type(rauthy_exec_t);
+
+type rauthy_var_lib_t;
+files_type(rauthy_var_lib_t);
+
+type rauthy_var_run_t;
+files_type(rauthy_var_run_t);
+
 require {
 	type abrt_t;
 	type abrt_dump_oops_t;
@@ -8,37 +20,34 @@ require {
 	type auditd_t;
 	type chkpwd_t;
 	type colord_t;
-	type etc_t;
+	type rauthy_etc_t;
 	type geoclue_t;
 	type home_root_t;
+	type http_port_t;
 	type http_cache_port_t;
 	type init_t;
-	type init_var_lib_t;
 	type local_login_t;
 	type logrotate_t;
 	type NetworkManager_t;
 	type passwd_t;
 	type policykit_t;
 	type policykit_auth_t;
+	type setfiles_exec_t;
 	type sshd_t;
 	type systemd_logind_t;
 	type systemd_tmpfiles_t;
 	type systemd_userdbd_t;
 	type unconfined_t;
-	type unconfined_service_t;
-	type unlabeled_t;
-	type useradd_exec_t;
+	type user_home_t;
 	type user_home_dir_t;
-	type user_tmp_t;
-	type var_lib_t;
-	type var_run_t;
+	type rauthy_var_run_t;
 	type virtqemud_t;
 	type xdm_t;
 
-	class dir { add_name create search getattr setattr search };
-	class file { create entrypoint execute execute_no_trans getattr open read setattr write };
+	class dir { add_name create search getattr open read relabelfrom relabelto setattr search write };
+	class file { create entrypoint execute execute_no_trans getattr map open read setattr write };
 	class tcp_socket name_connect;
-	class sock_file write;
+	class sock_file { create setattr write };
 	class unix_stream_socket connectto;
 }
 
@@ -47,97 +56,141 @@ require {
 #========================================
 
 #============= accountsd_t ==============
-allow accountsd_t etc_t:file setattr;
-allow accountsd_t user_tmp_t:sock_file write;
-allow accountsd_t var_run_t:sock_file write;
+allow accountsd_t rauthy_etc_t:file setattr;
+allow accountsd_t rauthy_var_run_t:sock_file write;
 allow accountsd_t unconfined_t:unix_stream_socket connectto;
-allow accountsd_t unconfined_service_t:unix_stream_socket connectto;
+allow accountsd_t rauthy_exec_t:unix_stream_socket connectto;
+
+#============= auditd_t ==============
+allow auditd_t rauthy_var_run_t:dir search;
 
 #============= chkpwd_t ==============
-allow chkpwd_t etc_t:file setattr;
-allow chkpwd_t unconfined_service_t:unix_stream_socket connectto;
-allow chkpwd_t var_lib_t:dir setattr;
-allow chkpwd_t var_run_t:sock_file write;
+allow chkpwd_t rauthy_etc_t:file setattr;
+allow chkpwd_t rauthy_exec_t:unix_stream_socket connectto;
+allow chkpwd_t rauthy_var_lib_t:dir setattr;
+allow chkpwd_t rauthy_var_run_t:sock_file write;
 
 #============= init_t ==============
-allow init_t etc_t:file setattr;
-allow init_t unconfined_service_t:unix_stream_socket connectto;
+allow init_t rauthy_var_lib_t:file { execute open read };
+allow init_t rauthy_var_run_t:dir add_name;
+allow init_t user_home_t:file { create open setattr write };
+allow init_t rauthy_etc_t:file { open read setattr };
+allow init_t http_port_t:tcp_socket name_connect;
+
+allow init_t rauthy_exec_t:unix_stream_socket connectto;
+allow init_t rauthy_exec_t:file { execute execute_no_trans map open read };
+
 # needed to be able to copy `skel_rauthy` dir into new home location
 allow init_t home_root_t:file { create open setattr write };
-# needed for exec_session_open / exec_session_close
-allow init_t var_lib_t:file execute;
+
+# On systemd systems, the rauthy-nss service is started via init_t.
+# Only this very service should be allowed to create + setattr the socket!
+allow init_t rauthy_var_run_t:sock_file { create setattr write };
 
 #============= local_login_t ==============
-allow local_login_t etc_t:file setattr;
-allow local_login_t unlabeled_t:dir search;
-allow local_login_t useradd_exec_t:file { execute execute_no_trans };
-allow local_login_t var_lib_t:dir { create setattr };
-allow local_login_t var_lib_t:file { create getattr open read write };
-allow local_login_t var_run_t:sock_file write;
-allow local_login_t unconfined_service_t:unix_stream_socket connectto;
+allow local_login_t rauthy_etc_t:dir { getattr open read };
+#allow local_login_t etc_t:file setattr;
+
+allow local_login_t rauthy_etc_t:dir search;
+allow local_login_t rauthy_etc_t:file { getattr open read setattr };
+
+allow local_login_t rauthy_var_lib_t:dir { add_name create getattr search setattr write };
+allow local_login_t rauthy_var_lib_t:file { create getattr open read write };
+
+allow local_login_t rauthy_var_run_t:dir search;
+allow local_login_t rauthy_var_run_t:sock_file write;
+allow local_login_t rauthy_exec_t:unix_stream_socket connectto;
+
+# necessary if the home dir does not exist after login
+allow local_login_t home_root_t:dir { relabelfrom setattr };
+allow local_login_t user_home_dir_t:dir relabelto;
+allow local_login_t user_home_dir_t:file { create getattr open setattr write };
+allow local_login_t setfiles_exec_t:file { execute execute_no_trans map };
 
 #============= sshd_t ==============
-allow sshd_t etc_t:file setattr;
-allow sshd_t user_home_dir_t:dir setattr;
-allow sshd_t unlabeled_t:file read;
-allow sshd_t var_lib_t:dir { create setattr };
-allow sshd_t var_lib_t:file { create getattr open read write };
-allow sshd_t var_run_t:sock_file write;
+allow sshd_t rauthy_etc_t:dir read;
+allow sshd_t rauthy_etc_t:file { getattr open read setattr };
+
+allow sshd_t rauthy_var_lib_t:dir { add_name create setattr write };
+allow sshd_t rauthy_var_lib_t:file { create getattr open read write };
 allow sshd_t http_cache_port_t:tcp_socket name_connect;
-allow sshd_t unconfined_service_t:unix_stream_socket connectto;
+allow sshd_t rauthy_var_run_t:sock_file write;
+allow sshd_t rauthy_exec_t:unix_stream_socket connectto;
+
+# necessary if the very first login is done via ssh with no existing home dir
+allow sshd_t home_root_t:dir setattr;
+allow sshd_t user_home_dir_t:dir setattr;
+allow sshd_t setfiles_exec_t:file { execute execute_no_trans map open read };
+
+allow sshd_t home_root_t:dir relabelfrom;
+allow sshd_t user_home_dir_t:dir relabelto;
+
+# needed to be able to copy `skel_rauthy` dir into new home location
+allow sshd_t user_home_dir_t:file { create getattr open setattr write };
+
+#============= systemd_logind_t ==============
+allow systemd_logind_t rauthy_var_run_t:dir search;
+
+#============= systemd_userdbd_t ==============
+allow systemd_userdbd_t rauthy_var_run_t:dir search;
 
 #============= unconfined_t ==============
 # session open / close scripts
-allow unconfined_t var_lib_t:file entrypoint;
-
+allow unconfined_t rauthy_var_lib_t:file entrypoint;
 
 #========================================
 #================= NSS ==================
 #========================================
 
 #============= abrt_t ==============
-allow abrt_t var_run_t:sock_file write;
-allow abrt_t unconfined_service_t:unix_stream_socket connectto;
+allow abrt_t rauthy_var_run_t:sock_file write;
+allow abrt_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= abrt_dump_oops_t ==============
-allow abrt_dump_oops_t var_run_t:sock_file write;
-allow abrt_dump_oops_t unconfined_service_t:unix_stream_socket connectto;
+allow abrt_dump_oops_t rauthy_var_run_t:sock_file write;
+allow abrt_dump_oops_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= auditd_t ==============
-allow auditd_t var_run_t:sock_file write;
-allow auditd_t unconfined_service_t:unix_stream_socket connectto;
+allow auditd_t rauthy_var_run_t:sock_file write;
+allow auditd_t rauthy_exec_t:unix_stream_socket connectto;
+
+#============= chkpwd_t ==============
+#allow chkpwd_t init_var_run_t:sock_file write;
+allow chkpwd_t rauthy_var_run_t:sock_file write;
+#allow chkpwd_t init_var_run_t:unix_stream_socket connectto;
+allow chkpwd_t rauthy_var_run_t:unix_stream_socket connectto;
 
 #============= geoclue_t ==============
-allow geoclue_t var_run_t:sock_file write;
-allow geoclue_t unconfined_service_t:unix_stream_socket connectto;
+allow geoclue_t rauthy_var_run_t:sock_file write;
+allow geoclue_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= logrotate_t ==============
-allow logrotate_t var_run_t:sock_file write;
-allow logrotate_t unconfined_service_t:unix_stream_socket connectto;
+allow logrotate_t rauthy_var_run_t:sock_file write;
+allow logrotate_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= passwd_t ==============
-allow passwd_t var_run_t:sock_file write;
-allow passwd_t unconfined_service_t:unix_stream_socket connectto;
+allow passwd_t rauthy_var_run_t:sock_file write;
+allow passwd_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= policykit_t ==============
-allow policykit_t var_run_t:sock_file write;
-allow policykit_t unconfined_service_t:unix_stream_socket connectto;
+allow policykit_t rauthy_var_run_t:sock_file write;
+allow policykit_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= policykit_auth_t ==============
-allow policykit_auth_t var_run_t:sock_file write;
-allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
+allow policykit_auth_t rauthy_var_run_t:sock_file write;
+allow policykit_auth_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= systemd_logind_t ==============
-allow systemd_logind_t var_run_t:sock_file write;
-allow systemd_logind_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_logind_t rauthy_var_run_t:sock_file write;
+allow systemd_logind_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= systemd_userdbd_t ==============
-allow systemd_userdbd_t var_run_t:sock_file write;
-allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_userdbd_t rauthy_var_run_t:sock_file write;
+allow systemd_userdbd_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= systemd_tmpfiles_t ==============
-allow systemd_tmpfiles_t var_run_t:sock_file write;
-allow systemd_tmpfiles_t unconfined_service_t:unix_stream_socket connectto;
+allow systemd_tmpfiles_t rauthy_var_run_t:sock_file write;
+allow systemd_tmpfiles_t rauthy_exec_t:unix_stream_socket connectto;
 
 
 #========================================
@@ -145,10 +198,10 @@ allow systemd_tmpfiles_t unconfined_service_t:unix_stream_socket connectto;
 #========================================
 
 #============= virtqemud_t ==============
-allow virtqemud_t etc_t:file setattr;
+allow virtqemud_t rauthy_etc_t:file setattr;
 allow virtqemud_t http_cache_port_t:tcp_socket name_connect;
-allow virtqemud_t unconfined_service_t:unix_stream_socket connectto;
-allow virtqemud_t var_run_t:sock_file write;
+allow virtqemud_t rauthy_exec_t:unix_stream_socket connectto;
+allow virtqemud_t rauthy_var_run_t:sock_file write;
 
 
 #========================================
@@ -156,17 +209,17 @@ allow virtqemud_t var_run_t:sock_file write;
 #========================================
 
 #============= colord_t ==============
-allow colord_t unconfined_service_t:unix_stream_socket connectto;
-allow colord_t var_run_t:sock_file write;
+allow colord_t rauthy_exec_t:unix_stream_socket connectto;
+allow colord_t rauthy_var_run_t:sock_file write;
 
 #============= NetworkManager_t ==============
-allow NetworkManager_t etc_t:file setattr;
-allow NetworkManager_t unconfined_service_t:unix_stream_socket connectto;
-allow NetworkManager_t var_lib_t:dir setattr;
-allow NetworkManager_t var_run_t:sock_file write;
+allow NetworkManager_t rauthy_etc_t:file setattr;
+allow NetworkManager_t rauthy_exec_t:unix_stream_socket connectto;
+allow NetworkManager_t rauthy_var_lib_t:dir setattr;
+allow NetworkManager_t rauthy_var_run_t:sock_file write;
 
 #============= xdm_t ==============
-allow xdm_t etc_t:file setattr;
-allow xdm_t init_var_lib_t:dir { getattr search };
-allow xdm_t var_lib_t:file write;
-allow xdm_t var_run_t:sock_file write;
+allow xdm_t rauthy_etc_t:file setattr;
+allow xdm_t rauthy_var_lib_t:dir { getattr search };
+allow xdm_t rauthy_var_lib_t:file write;
+allow xdm_t rauthy_var_run_t:sock_file write;

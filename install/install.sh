@@ -38,7 +38,7 @@ mv() {
 
 restorecon() {
   if command restorecon; then
-    /usr/sbin/restorecon -r "$1"
+    /usr/sbin/restorecon -rv "$1"
   fi
 }
 
@@ -183,8 +183,16 @@ installSELinux() {
 
   echo "Installing basic SELinux policies"
 
+  # make sure it exists so it does not error
+  mkdir /var/run/rauthy
+
   /usr/sbin/setsebool -P nis_enabled 1
   /usr/sbin/semodule -i selinux/rauthy-pam-nss.pp
+  restorecon /etc/rauthy
+  restorecon /etc/skel_rauthy
+  restorecon /usr/local/sbin
+  restorecon /var/run/rauthy
+  restorecon /var/lib/pam_rauthy
 
   echo "SEModule named rauthy-pam-nss installed and nis_enabled boolean set"
 }
