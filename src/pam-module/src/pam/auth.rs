@@ -151,7 +151,9 @@ impl RauthyPam {
             sys_err(pamh, &format!("Login denied for user {username}"));
             return Err(PamError::CRED_INSUFFICIENT);
         }
-        let is_local_password_only = svc == PamService::Login && preflight.local_password_only;
+        let is_local_password_only =
+            matches!(svc, PamService::Login | PamService::Sudo | PamService::Su)
+                && preflight.local_password_only;
 
         let mut login_req = PamLoginRequest {
             host_id: config.host_id.clone(),
@@ -208,6 +210,15 @@ impl RauthyPam {
                     format!("Rauthy PAM Password Login successful for user {username}")
                 };
                 sys_info(pamh, &msg);
+
+                // Note: We are creating the home dir during login and not in session, where it
+                // would make more sense from a logical standpoint. The reason is that we can have
+                // more hardened SELinux rules, if we do it here. During the session creation,
+                // we are usually executing from an `unconfined_t` context, where we definitely
+                // do not want to allow relabeling files.
+                if let Err(err) = token.create_home_dir() {
+                    sys_err(&pamh, &err.to_string());
+                }
 
                 if let Err(err) = token.save(&config) {
                     sys_err(pamh, &format!("Error saving PAM token: {err}"));

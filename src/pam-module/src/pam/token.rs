@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::Permissions;
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::OnceLock;
 
 static TOKEN: OnceLock<Option<PamToken>> = OnceLock::new();
@@ -38,6 +39,14 @@ impl PamToken {
                     .expect("Cannot set user:group for home dir");
                 fs::set_permissions(&path, Permissions::from_mode(0o700))
                     .expect("Cannot set permissions for new user homedir");
+
+                // TODO even though this works fine, it requires an SELinux rule that I don't
+                //  want. Is there maybe a nicer solution to this?
+                // we want to ignore the result here, because SELinux may not even be installed
+                let _ = Command::new("/usr/sbin/restorecon")
+                    .arg("-rv")
+                    .arg(&path)
+                    .output();
             }
 
             if let Some(skel) = &Config::read()?.home_dir_skel {
