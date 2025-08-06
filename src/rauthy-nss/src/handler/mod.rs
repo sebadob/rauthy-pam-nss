@@ -76,7 +76,10 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         return match opt {
             None => {
                 // we do this check for negative caching
-                Err(Error::new(ErrorType::NotFound, "value not found"))
+                Err(Error::new(
+                    ErrorType::NotFound,
+                    format!("Negative cache value: {getent:?}"),
+                ))
             }
             Some(value) => Ok(Response::builder()
                 .status(200)
@@ -91,7 +94,10 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         // address via the systems hosts, for which we should provide the data.
         // If the connection to Rauthy is unhealthy or Rauthy itself is unhealthy,
         // just send back NotFound.
-        return Err(Error::new(ErrorType::NotFound, "value not found"));
+        return Err(Error::new(
+            ErrorType::NotFound,
+            format!("Rauthy unhealthy: {getent:?}"),
+        ));
     }
 
     let config = Config::get();
@@ -101,7 +107,10 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
         Err(err) => {
             error!("Rauthy Connection Error: {err:?}");
             Cache::set(cache_key, None, 10).await;
-            return Err(Error::new(ErrorType::NotFound, "value not found"));
+            return Err(Error::new(
+                ErrorType::NotFound,
+                format!("value not found: {getent:?}"),
+            ));
         }
     };
 
