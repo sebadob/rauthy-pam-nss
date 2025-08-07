@@ -164,7 +164,10 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
     Cache::set(cache_key, bytes.clone(), ttl).await;
 
     match bytes {
-        None => Err(Error::new(ErrorType::NotFound, "value not found")),
+        None => Err(Error::new(
+            ErrorType::NotFound,
+            format!("value not found: {getent:?}"),
+        )),
         Some(value) => Ok(Response::builder()
             .status(200)
             .body(Body::from(value))

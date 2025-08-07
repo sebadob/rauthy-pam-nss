@@ -217,7 +217,7 @@ impl RauthyPam {
                 // we are usually executing from an `unconfined_t` context, where we definitely
                 // do not want to allow relabeling files.
                 if let Err(err) = token.create_home_dir() {
-                    sys_err(&pamh, &err.to_string());
+                    sys_err(pamh, &err.to_string());
                 }
 
                 if let Err(err) = token.save(&config) {

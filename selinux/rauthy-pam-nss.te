@@ -155,9 +155,7 @@ allow auditd_t rauthy_var_run_t:sock_file write;
 allow auditd_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= chkpwd_t ==============
-#allow chkpwd_t init_var_run_t:sock_file write;
 allow chkpwd_t rauthy_var_run_t:sock_file write;
-#allow chkpwd_t init_var_run_t:unix_stream_socket connectto;
 allow chkpwd_t rauthy_var_run_t:unix_stream_socket connectto;
 
 #============= geoclue_t ==============

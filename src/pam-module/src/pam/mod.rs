@@ -83,6 +83,7 @@ pub enum PamService {
     Ssh,
     Sudo,
     Su,
+    SystemdUser,
     Other(String),
     Unknown,
 }
@@ -174,6 +175,7 @@ impl RauthyPam {
                     "sshd" => PamService::Ssh,
                     "sudo" | "sudo-i" => PamService::Sudo,
                     "su" | "su-l" => PamService::Su,
+                    "systemd-user" => PamService::SystemdUser,
                     s => PamService::Other(s.to_string()),
                 }
             }
@@ -260,14 +262,19 @@ impl PamServiceModule for RauthyPam {
             } else {
                 "local"
             };
-            pamh.putenv(&format!("{ENV_SESSION}={session_typ}"))
-                .unwrap();
-            pamh.putenv(&format!("{ENV_USER_ID}={}", token.user_id))
-                .unwrap();
-            pamh.putenv(&format!("{ENV_USER_EMAIL}={}", token.user_email))
-                .unwrap();
-            pamh.putenv(&format!("{ENV_USERNAME}={}", token.username))
-                .unwrap();
+            sys_info(&pamh, "session_typ: {session_typ:?}");
+            if let Err(err) = pamh.putenv(&format!("{ENV_SESSION}={session_typ}")) {
+                sys_err(&pamh, &format!("Error setting ENV var: {err}"));
+            }
+            if let Err(err) = pamh.putenv(&format!("{ENV_USER_ID}={}", token.user_id)) {
+                sys_err(&pamh, &format!("Error setting ENV var: {err}"));
+            }
+            if let Err(err) = pamh.putenv(&format!("{ENV_USER_EMAIL}={}", token.user_email)) {
+                sys_err(&pamh, &format!("Error setting ENV var: {err}"));
+            }
+            if let Err(err) = pamh.putenv(&format!("{ENV_USERNAME}={}", token.username)) {
+                sys_err(&pamh, &format!("Error setting ENV var: {err}"));
+            }
 
             if let Some(path) = &config.exec_session_open {
                 let svc = Self::get_service(&pamh);
@@ -281,7 +288,7 @@ impl PamServiceModule for RauthyPam {
 
             PamError::SUCCESS
         } else {
-            eprintln!("No token in open session");
+            sys_err(&pamh, "No token in open session");
             PamError::AUTHINFO_UNAVAIL
         }
     }

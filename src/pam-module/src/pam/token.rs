@@ -85,11 +85,11 @@ impl PamToken {
                 }
                 Err(err) => {
                     eprintln!("Token Validation Error: {err}");
-                    TOKEN.set(None).unwrap();
                     Ok(None)
                 }
             }
         } else {
+            TOKEN.set(Some(slf)).unwrap();
             Ok(Some(TOKEN.get().unwrap().as_ref().unwrap()))
         }
     }
