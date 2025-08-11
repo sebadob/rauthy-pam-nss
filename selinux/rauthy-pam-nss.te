@@ -19,6 +19,7 @@ require {
 	type accountsd_t;
 	type auditd_t;
 	type chkpwd_t;
+	type chronyd_t;
 	type colord_t;
 	type rauthy_etc_t;
 	type geoclue_t;
@@ -157,6 +158,10 @@ allow auditd_t rauthy_exec_t:unix_stream_socket connectto;
 #============= chkpwd_t ==============
 allow chkpwd_t rauthy_var_run_t:sock_file write;
 allow chkpwd_t rauthy_var_run_t:unix_stream_socket connectto;
+
+#============= chronyd_t ==============
+allow chronyd_t rauthy_var_run_t:sock_file write;
+allow chronyd_t rauthy_var_run_t:unix_stream_socket connectto;
 
 #============= geoclue_t ==============
 allow geoclue_t rauthy_var_run_t:sock_file write;
