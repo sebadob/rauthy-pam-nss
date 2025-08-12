@@ -39,11 +39,6 @@ impl Debug for PamWebauthn {
 }
 
 impl PamWebauthn {
-    // pub fn new() -> (Self, flume::Receiver<PamReq>) {
-    //     let (tx, rx) = flume::bounded(1);
-    //     (Self { tx }, rx)
-    // }
-
     pub async fn perform_auth(
         pamh: &Pam,
         mut authenticator: CtapAuthenticator<'static, USBToken, Self>,
@@ -112,7 +107,7 @@ impl PamWebauthn {
         }
     }
 
-    pub async fn wait_for_passkey<U: UiCallback>(ui: &U) -> CtapAuthenticator<USBToken, U> {
+    pub async fn wait_for_passkey<U: UiCallback>(ui: &U) -> CtapAuthenticator<'_, USBToken, U> {
         use futures::StreamExt;
 
         let reader = USBTransport::new().await.unwrap();

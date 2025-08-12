@@ -3,7 +3,6 @@ use std::sync::LazyLock;
 mod group;
 mod hosts;
 mod passwd;
-mod shadow;
 
 static RT: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
     tokio::runtime::Builder::new_current_thread()
