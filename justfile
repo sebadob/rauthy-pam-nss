@@ -50,7 +50,7 @@ build profile="debug":
     cargo build {{ profile }}
 
 # builds the nss proxy in release mode and copies it into the system
-build-install:
+build-install-proxy:
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -102,6 +102,7 @@ build-install-archive:
     #cp target/aarch64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/aarch64/
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/aarch64/pam_rauthy.so
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/aarch64/libnss_rauthy.so.2
+    cp -r install/aarch64 {{ install_dir }}/
 
     # copy other files + templates
     cp LICENSE {{ install_dir }}/LICENSE
@@ -131,56 +132,16 @@ apply-selinux ty="local":
     set -euxo pipefail
 
     cd selinux
-
-    if [[ {{ ty }} == "local" ]]; then
-        echo 'Building and applying SELinux rules for local login'
-        checkmodule -M -m -o pam-rauthy-local.mod pam-rauthy-local.te && \
-        semodule_package -m pam-rauthy-local.mod -o pam-rauthy-local.pp && \
-        sudo semodule -i pam-rauthy-local.pp
-    elif [[ {{ ty }} == "gdm" ]]; then
-        echo 'Building and applying SELinux rules for gdm login'
-        checkmodule -M -m -o pam-rauthy-gdm.mod pam-rauthy-gdm.te && \
-        semodule_package -m pam-rauthy-gdm.mod -o pam-rauthy-gdm.pp && \
-        sudo semodule -i pam-rauthy-gdm.pp
-    elif [[ {{ ty }} == "kvm" ]]; then
-        echo 'Building and applying SELinux rules for kvm'
-        checkmodule -M -m -o nss-rauthy-kvm.mod nss-rauthy-kvm.te && \
-        semodule_package -m nss-rauthy-kvm.mod -o nss-rauthy-kvm.pp && \
-        sudo semodule -i nss-rauthy-kvm.pp
-    elif [[ {{ ty }} == "nis" ]]; then
-        setsebool -P nis_enabled 1
-    elif [[ {{ ty }} == "nss" ]]; then
-        echo 'Building and applying SELinux rules for NSS lookups'
-        checkmodule -M -m -o rauthy-nss-uds-access.mod rauthy-nss-uds-access.te && \
-        semodule_package -m rauthy-nss-uds-access.mod -o rauthy-nss-uds-access.pp && \
-        sudo semodule -i rauthy-nss-uds-access.pp
-    elif [[ {{ ty }} == "script" ]]; then
-        echo 'Building and applying SELinux rules for skel dir copy'
-        checkmodule -M -m -o pam-rauthy-script.mod pam-rauthy-script.te && \
-        semodule_package -m pam-rauthy-script.mod -o pam-rauthy-script.pp && \
-        sudo semodule -i pam-rauthy-script.pp
-    elif [[ {{ ty }} == "skel" ]]; then
-        echo 'Building and applying SELinux rules for skel dir copy'
-        checkmodule -M -m -o pam-rauthy-skel.mod pam-rauthy-skel.te && \
-        semodule_package -m pam-rauthy-skel.mod -o pam-rauthy-skel.pp && \
-        sudo semodule -i pam-rauthy-skel.pp
-    elif [[ {{ ty }} == "ssh" ]]; then
-        echo 'Building and applying SELinux rules for ssh login'
-        checkmodule -M -m -o pam-rauthy-ssh.mod pam-rauthy-ssh.te && \
-        semodule_package -m pam-rauthy-ssh.mod -o pam-rauthy-ssh.pp && \
-        sudo semodule -i pam-rauthy-ssh.pp
-    fi
+    #checkmodule -M -m -o rauthy-pam-nss.mod rauthy-pam-nss.te && \
+    #semodule_package -m rauthy-pam-nss.mod -o rauthy-pam-nss.pp && \
+    make -f /usr/share/selinux/devel/Makefile
+    sudo semodule -i rauthy-pam-nss.pp
 
 # remove the SELinux modules
 remove-selinux:
     #!/usr/bin/env bash
     set -euxo pipefail
-    sudo semodule -r pam-rauthy-local
-    sudo semodule -r pam-rauthy-gdm
     sudo semodule -r pam-rauthy-nss
-    sudo semodule -r pam-rauthy-script
-    sudo semodule -r pam-rauthy-skel
-    sudo semodule -r pam-rauthy-ssh
     setsebool -P nis_enabled 0
 
 # create release build and copy it into /usr/lib64/security/pam_rauthy.so
@@ -238,26 +199,8 @@ run ty="auth": install-pam
       sudo pamtester {{ pam_file }} {{ test_user }} chauthtok
     fi
 
-# verifies the MSRV
-msrv-verify:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    cargo msrv verify
-
-# find's the new MSRV, if it needs a bump
-msrv-find:
-    cargo msrv find --min {{ MSRV }}
-
-# verify thats everything is good
-verify:
-    # we don't want to rebuild the UI each time because it's checked into git
-    #just build ui
-    just check
-    just clippy
-    just msrv-verify
-
 # makes sure everything is fine
-verify-is-clean: verify
+verify: check
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -267,7 +210,7 @@ verify-is-clean: verify
     echo all good
 
 # sets a new git tag and pushes it
-release:
+release: verify
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -276,5 +219,3 @@ release:
 
     git tag "v$TAG"
     git push origin "v$TAG"
-
-    just build-image

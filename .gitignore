@@ -1,4 +1,5 @@
 .idea
 /target
 /data/**
+/install/aarch64
 /install/rauthy-pam-nss-install

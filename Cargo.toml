@@ -39,8 +39,6 @@ tikv-jemallocator = { version = "0.6", features = ["unprefixed_malloc_on_support
 tokio = { version = "1.45.0" }
 toml = "0.9"
 url = { version = "2.5.4", features = ["serde"] }
-#webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "nfc", "ui-cli", "usb"] }
-#webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "nfc", "ui-cli", "usb"] }
 webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "ui-cli", "usb"] }
 webauthn-rs = "0.5.2"
 webauthn-rs-core = "0.5.2"
