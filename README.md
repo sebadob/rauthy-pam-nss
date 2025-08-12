@@ -68,3 +68,17 @@ place directly.
 
 **CAUTION:** Make sure to test all the logins and things that should work at this point BEFORE logging out. Keep a
 backup session open, just in case something broke. Incorrectly configured PAM modules can lock you out of your machine!
+
+## Limitations
+
+Everything you need to do via SSH should be fine, as long as your configuration supports it. However, there is currently
+one limitation regarding multiple chained `su -` via SSH. You simply cannot do this, when you use a Rauthy-managed
+account. You can do a single one via e.g. `sudo su -` to become `root`, but you will not be able to do another `su -`
+for a Rauthy-managed user from that session. You need to `exit` first to get to your root session. The reason is, that
+the NSS module checks ENV vars from your session and depending on their values, it will either request a Remote PAM
+Password from the account dashboard, or it will request your "real" password / Yubikey. If you have a password-only
+account, this will work, but if your account is MFA secured, it's simply impossible to provide a USB Passkey via an
+ssh remote connection.
+
+Of course anyone can just modify their own env vars, but this is no security issue. If you mess up the `RAUTHY_*` env
+vars, you will simply not be able to do anything authentication related anymore depending on your account setup.
