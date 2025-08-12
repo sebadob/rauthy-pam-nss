@@ -21,6 +21,7 @@ require {
 	type chkpwd_t;
 	type chronyd_t;
 	type colord_t;
+	type dnsmasq_t;
 	type rauthy_etc_t;
 	type geoclue_t;
 	type home_root_t;
@@ -157,11 +158,19 @@ allow auditd_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= chkpwd_t ==============
 allow chkpwd_t rauthy_var_run_t:sock_file write;
-allow chkpwd_t rauthy_var_run_t:unix_stream_socket connectto;
+allow chkpwd_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= chronyd_t ==============
 allow chronyd_t rauthy_var_run_t:sock_file write;
-allow chronyd_t rauthy_var_run_t:unix_stream_socket connectto;
+allow chronyd_t rauthy_exec_t:unix_stream_socket connectto;
+
+#============= colord_t ==============
+allow colord_t rauthy_var_run_t:sock_file write;
+allow colord_t rauthy_exec_t:unix_stream_socket connectto;
+
+#============= dnsmasq_t ==============
+allow dnsmasq_t rauthy_var_run_t:sock_file write;
+allow dnsmasq_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= geoclue_t ==============
 allow geoclue_t rauthy_var_run_t:sock_file write;
@@ -211,15 +220,11 @@ allow virtqemud_t rauthy_var_run_t:sock_file write;
 #================= GDM ==================
 #========================================
 
-#============= colord_t ==============
-allow colord_t rauthy_exec_t:unix_stream_socket connectto;
-allow colord_t rauthy_var_run_t:sock_file write;
-
 #============= NetworkManager_t ==============
 allow NetworkManager_t rauthy_etc_t:file setattr;
-allow NetworkManager_t rauthy_exec_t:unix_stream_socket connectto;
 allow NetworkManager_t rauthy_var_lib_t:dir setattr;
 allow NetworkManager_t rauthy_var_run_t:sock_file write;
+allow NetworkManager_t rauthy_exec_t:unix_stream_socket connectto;
 
 #============= xdm_t ==============
 allow xdm_t rauthy_etc_t:file setattr;
