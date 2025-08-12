@@ -7,7 +7,7 @@ After=network.target
 # to increase this value up to 4x workers if you increase workers
 # because you have a lot of concurrency.
 Environment="MALLOC_CONF=narenas:1"
-ExecStart=/usr/local/sbin/rauthy-nss
+ExecStart=/usr/sbin/rauthy-nss
 Type=exec
 Restart=always
 

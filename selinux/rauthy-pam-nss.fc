@@ -1,5 +1,5 @@
-/usr/sbin/rauthy-nss -- gen_context(system_u:object_r:rauthy_exec_t,s0)
-/usr/local/sbin/rauthy-nss -- gen_context(system_u:object_r:rauthy_exec_t,s0)
+/usr/(bin|sbin)/rauthy-nss -- gen_context(system_u:object_r:rauthy_exec_t,s0)
+/usr/local/(bin|sbin)/rauthy-nss -- gen_context(system_u:object_r:rauthy_exec_t,s0)
 /etc/rauthy -d gen_context(system_u:object_r:rauthy_etc_t,s0)
 /etc/rauthy(/.*)? -- gen_context(system_u:object_r:rauthy_etc_t,s0)
 /etc/skel_rauthy(/.*)? -d gen_context(system_u:object_r:rauthy_etc_t,s0)

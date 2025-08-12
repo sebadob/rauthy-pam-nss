@@ -175,6 +175,9 @@ installSELinux() {
   /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-nss.pp
   restorecon /etc/rauthy
   restorecon /etc/skel_rauthy
+  restorecon /usr/bin
+  restorecon /usr/sbin
+  restorecon /usr/local/bin
   restorecon /usr/local/sbin
   restorecon /var/run/rauthy
   restorecon /var/lib/pam_rauthy
@@ -198,7 +201,7 @@ will already be persistent.
   echo "Installing rauthy-nss service"
   ARCH=$(/usr/bin/uname -m)
   if [[ $ARCH == "x86_64" ]];then
-    cp "$ROOT"/x86_64/rauthy-nss /usr/local/sbin/
+    cp "$ROOT"/x86_64/rauthy-nss /usr/sbin/
 
     if is_rhel; then
       cp -f "$ROOT"/x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
@@ -211,7 +214,7 @@ will already be persistent.
       unknown_distro
     fi
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
-    cp "$ROOT"/aarch64/rauthy-nss /usr/local/sbin/
+    cp "$ROOT"/aarch64/rauthy-nss /usr/sbin/
 
     if is_rhel; then
       cp -f "$ROOT"/aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
@@ -228,8 +231,8 @@ will already be persistent.
     echo "Unsupported architecture"
     exit 1
   fi
-  chmod 755 /usr/local/sbin/rauthy-nss
-  restorecon /usr/local/sbin/rauthy-nss
+  chmod 755 /usr/sbin/rauthy-nss
+  restorecon /usr/sbin/rauthy-nss
 
   echo "Copying systemd service file into place"
   cp "$ROOT"/rauthy-nss.service /etc/systemd/system/rauthy-nss.service
