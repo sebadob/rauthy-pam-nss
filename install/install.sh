@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+ROOT="$(dirname "$(realpath "$0")")"
+
 chmod() {
   /usr/bin/chmod "$@"
 }
@@ -38,7 +40,7 @@ mv() {
 
 restorecon() {
   if command restorecon; then
-    /usr/sbin/restorecon -rv "$1"
+    /usr/sbin/restorecon -rvF "$1"
   fi
 }
 
@@ -70,7 +72,7 @@ is_root() {
 }
 
 is_x86_64() {
-  if [[ $(uname -m) != "x86_64" ]]; then
+  if [[ $(/usr/bin/uname -m) != "x86_64" ]]; then
     echo "Currently, only x86_64 is supported. You need to build from source for other platforms."
     exit 1
   fi
@@ -101,23 +103,6 @@ unknown_distro() {
   exit 1
 }
 
-#installTools () {
-#  echo 'Installing necessary tools'
-#
-#  if command dnf; then
-#    # SELinux may not be installed
-#    if command getenforce; then
-#      # works on RHEL10, not tested on lower versions
-#      /usr/bin/dnf install checkpolicy policycoreutils-python-utils setools-console
-#    fi
-#  elif command apt; then
-#    #/usr/bin/apt install ...
-#    echo "Debian based distros have not been tested yet"
-#  else
-#    echo "Your distro has not been tested yet"
-#  fi
-#}
-
 createConfig () {
   mkdir /etc/rauthy
   chmod 0600 /etc/rauthy
@@ -125,7 +110,7 @@ createConfig () {
   if test -f /etc/rauthy/rauthy-pam-nss.toml ; then
     mv /etc/rauthy/rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml.$(date +%s)
   fi
-  cp rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml
+  cp "$ROOT"/rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml
   chmod 0600 /etc/rauthy/rauthy-pam-nss.toml
   restorecon /etc/rauthy
 
@@ -161,7 +146,7 @@ This MUST NEVER be used in production!
 
   mkdir /var/lib/pam_rauthy
   chmod 755 /var/lib/pam_rauthy
-  cp session_scripts/session_* /var/lib/pam_rauthy/
+  cp "$ROOT"/session_scripts/session_* /var/lib/pam_rauthy/
   chmod 700 /var/lib/pam_rauthy/session_*
   restorecon /var/lib/pam_rauthy
 
@@ -187,7 +172,7 @@ installSELinux() {
   mkdir /var/run/rauthy
 
   /usr/sbin/setsebool -P nis_enabled 1
-  /usr/sbin/semodule -i selinux/rauthy-pam-nss.pp
+  /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-nss.pp
   restorecon /etc/rauthy
   restorecon /etc/skel_rauthy
   restorecon /usr/local/sbin
@@ -211,27 +196,34 @@ will already be persistent.
   systemctl stop rauthy-nss || echo 'rauthy-nss service not running'
 
   echo "Installing rauthy-nss service"
-  ARCH=$(uname -m)
+  ARCH=$(/usr/bin/uname -m)
   if [[ $ARCH == "x86_64" ]];then
-    # we don't want top put it in /usr/local/sbin to not need custom
-    # SELinux type_transitions when the service is being started
-    cp x86_64/rauthy-nss /usr/local/sbin/
+    cp "$ROOT"/x86_64/rauthy-nss /usr/local/sbin/
 
     if is_rhel; then
-      cp -f x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
-       if ! test -f /lib/libnss_rauthy.so.2; then
-         ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
-       fi
+      cp -f "$ROOT"/x86_64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+      if ! test -f /lib/libnss_rauthy.so.2; then
+        ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
+      fi
     elif is_debian; then
-      cp -f x86_64/libnss_rauthy.so.2 /lib/x86_64-linux-gnu/libnss_rauthy.so.2
+      cp -f "$ROOT"/x86_64/libnss_rauthy.so.2 /lib/x86_64-linux-gnu/libnss_rauthy.so.2
     else
       unknown_distro
     fi
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
-    echo "aarch64 / arm64 is supported, but needs manual compilation from source"
-    exit 1
-    #cp aarch64/rauthy-nss /usr/local/sbin/
-    #cp -f aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+    cp "$ROOT"/aarch64/rauthy-nss /usr/local/sbin/
+
+    if is_rhel; then
+      cp -f "$ROOT"/aarch64/libnss_rauthy.so.2 /lib64/libnss_rauthy.so.2
+      if ! test -f /lib/libnss_rauthy.so.2; then
+        ln -s /lib64/libnss_rauthy.so.2 /lib/libnss_rauthy.so.2
+      fi
+    elif is_debian; then
+      # TODO don't have any debian aarch64 available, not 100% sure if the target is correct
+      cp -f "$ROOT"/aarch64/libnss_rauthy.so.2 /lib/aarch64-linux-gnu/libnss_rauthy.so.2
+    else
+      unknown_distro
+    fi
   else
     echo "Unsupported architecture"
     exit 1
@@ -240,7 +232,7 @@ will already be persistent.
   restorecon /usr/local/sbin/rauthy-nss
 
   echo "Copying systemd service file into place"
-  cp rauthy-nss.service /etc/systemd/system/rauthy-nss.service
+  cp "$ROOT"/rauthy-nss.service /etc/systemd/system/rauthy-nss.service
   echo "Reloading daemon and enableing rauthy-nss.service"
   systemctl daemon-reload
   systemctl enable rauthy-nss --now
@@ -251,9 +243,9 @@ will already be persistent.
   fi
   cp /etc/nsswitch.conf /etc/nsswitch.conf.$(date +%s)
   if is_rhel; then
-    cp pam/rhel/nsswitch.conf /etc/nsswitch.conf
+    cp "$ROOT"/pam/rhel/nsswitch.conf /etc/nsswitch.conf
   elif is_debian; then
-    cp pam/debian/nsswitch.conf /etc/nsswitch.conf
+    cp "$ROOT"/pam/debian/nsswitch.conf /etc/nsswitch.conf
   else
     unknown_distro
   fi
@@ -374,13 +366,13 @@ configuration may lock you our of your system.
 
     if is_rhel; then
 
-      cp x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
+      cp "$ROOT"/x86_64/pam_rauthy.so /lib64/security/pam_rauthy.so
       chmod 755 /lib64/security/pam_rauthy.so
       restorecon /lib64/security/pam_rauthy.so
 
     elif is_debian; then
 
-      cp x86_64/pam_rauthy.so /lib/x86_64-linux-gnu/security/pam_rauthy.so
+      cp "$ROOT"/x86_64/pam_rauthy.so /lib/x86_64-linux-gnu/security/pam_rauthy.so
       chmod 755 /lib/x86_64-linux-gnu/security/pam_rauthy.so
 
     else
@@ -388,9 +380,21 @@ configuration may lock you our of your system.
     fi
 
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
-    echo "aarch64 / arm64 is supported, but needs manual compilation from source"
-    exit 1
-    #cp aarch64/pam_rauthy.so /lib64/security/pam_rauthy.so
+    if is_rhel; then
+
+      cp "$ROOT"/aarch64/pam_rauthy.so /lib64/security/pam_rauthy.so
+      chmod 755 /lib64/security/pam_rauthy.so
+      restorecon /lib64/security/pam_rauthy.so
+
+    elif is_debian; then
+
+      # TODO don't have any debian aarch64 available, not 100% sure if the target is correct
+      cp "$ROOT"/aarch64/pam_rauthy.so /lib/aarch64-linux-gnu/security/pam_rauthy.so
+      chmod 755 /lib/aarch64-linux-gnu/security/pam_rauthy.so
+
+    else
+      unknown_distro
+    fi
   else
     echo "Unsupported architecture"
     exit 1
@@ -401,9 +405,9 @@ configuration may lock you our of your system.
       /usr/bin/authselect create-profile -b=local rauthy
     fi
 
-    cp pam/rhel/system-auth /etc/authselect/custom/rauthy/
-    cp pam/rhel/password-auth /etc/authselect/custom/rauthy/
-    cp pam/rhel/nsswitch.conf /etc/authselect/custom/rauthy/
+    cp "$ROOT"/pam/rhel/system-auth /etc/authselect/custom/rauthy/
+    cp "$ROOT"/pam/rhel/password-auth /etc/authselect/custom/rauthy/
+    cp "$ROOT"/pam/rhel/nsswitch.conf /etc/authselect/custom/rauthy/
 
     echo "
 Found 'authselect', assuming it is in use - created a custom profile in:
@@ -443,9 +447,9 @@ broken PAM setup can lock you out of your own system!
       cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(date +%s)
       cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(date +%s)
 
-      cp pam/rhel/system-auth /etc/pam.d/system-auth
+      cp "$ROOT"/pam/rhel/system-auth /etc/pam.d/system-auth
       restorecon /etc/pam.d/system-auth
-      cp pam/rhel/password-auth /etc/pam.d/password-auth
+      cp "$ROOT"/pam/rhel/password-auth /etc/pam.d/password-auth
       restorecon /etc/pam.d/password-auth
 
     elif is_debian; then
@@ -468,10 +472,10 @@ broken PAM setup can lock you out of your own system!
       cp /etc/pam.d/common-account /etc/pam.d/common-account.$(date +%s)
       cp /etc/pam.d/common-session /etc/pam.d/common-session.$(date +%s)
 
-      cp pam/debian/common-auth /etc/pam.d/common-auth
-      cp pam/debian/common-password /etc/pam.d/common-password
-      cp pam/debian/common-account /etc/pam.d/common-account
-      cp pam/debian/common-session /etc/pam.d/common-session
+      cp "$ROOT"/pam/debian/common-auth /etc/pam.d/common-auth
+      cp "$ROOT"/pam/debian/common-password /etc/pam.d/common-password
+      cp "$ROOT"/pam/debian/common-account /etc/pam.d/common-account
+      cp "$ROOT"/pam/debian/common-session /etc/pam.d/common-session
 
     else
       unknown_distro
@@ -491,9 +495,7 @@ out of your own system!
 is_root
 is_x86_64
 if [ "$1" == 'nss' ]; then
-#  installTools
   createConfig
-  # TODO
   #installAppArmor
   installSELinux
   installNSS
