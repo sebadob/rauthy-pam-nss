@@ -108,6 +108,8 @@ impl RauthyPam {
                 )));
             }
 
+            // we never want to execute a script as `root`, when it does not have
+            // the correct permissions
             let mode = meta.permissions().mode();
             if mode != 0o100700 {
                 return Err(anyhow::Error::msg(format!(

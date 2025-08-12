@@ -21,13 +21,13 @@ impl HttpClient {
             .use_rustls_tls()
             .user_agent(format!("Rauthy NSS Proxy v{VERSION}"));
 
-        let client = if !Config::get().danger_allow_insecure {
+        let client = if Config::get().danger_allow_insecure {
+            builder
+        } else {
             builder
                 .https_only(true)
                 .danger_accept_invalid_certs(false)
                 .danger_accept_invalid_hostnames(false)
-        } else {
-            builder
         }
         .build()
         .unwrap();
@@ -42,8 +42,6 @@ impl HttpClient {
 
     #[inline]
     pub async fn getent(getent: &Getent) -> Result<Option<GetentResponse>, Error> {
-        // TODO impl and check local cache first
-
         let config = Config::get();
         let url = format!("{}auth/v1/pam/getent", config.rauthy_url);
 
@@ -65,8 +63,6 @@ impl HttpClient {
             let resp = res.json::<GetentResponse>().await?;
             Ok(Some(resp))
         } else {
-            // let msg = res.text().await?;
-            // error!("{msg}");
             Ok(None)
         }
     }

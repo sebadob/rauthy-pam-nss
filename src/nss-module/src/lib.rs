@@ -28,6 +28,5 @@ fn init_syslog() {
 }
 
 libnss_passwd_hooks!(rauthy, RauthyNss);
-// libnss_shadow_hooks!(rauthy, RauthyNss);
 libnss_group_hooks!(rauthy, RauthyNss);
 libnss_host_hooks!(rauthy, RauthyNss);

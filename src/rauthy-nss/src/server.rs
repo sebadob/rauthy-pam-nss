@@ -21,15 +21,16 @@ pub async fn run() -> anyhow::Result<()> {
     // inside and the deletion of the socket itself, after it has been created. This protects the
     // socket from being spoofed, even when it's world `rw`. If the socket was spoofable, an
     // attacker could spoof responses in a way to abuse it for priv esc.
+    // SELinux will only put an additional layer of protection on top, but it's not available
+    // everywhere.
     fs::set_permissions(parent, Permissions::from_mode(0o755)).await?;
 
     let uds = UnixListener::bind(path)?;
     // The socket must be available for world.
-    // It does not leak any information that a normal user on the system would not be able
-    // to see anyway. It only exports NSS information, that e.g. anyone could read anyway by
-    // from /etc/passwd anyway.
+    // It does not leak any information a normal user on the system would not be able to see anyway.
+    // It only exports NSS information, that e.g. anyone could read by from /etc/passwd by default.
     //
-    // TODO find a way to explicitly set the sticky bit here, or does UnixListener already do that?
+    // TODO find a way to explicitly set the sticky bit from safe rust. Is this even possible?
     fs::set_permissions(PROXY_SOCKET, Permissions::from_mode(0o766)).await?;
 
     let app = Router::new()

@@ -31,8 +31,8 @@ pub static RAUTHY_HEALTHY: AtomicBool = AtomicBool::new(false);
 
 fn main() -> anyhow::Result<()> {
     Config::load()?;
-
     logging::init()?;
+
     info!("Rauthy NSS Proxy v{VERSION}");
     info!("Using config file from {CONFIG_PATH}");
 

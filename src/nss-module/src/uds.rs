@@ -12,7 +12,7 @@ pub async fn get(path: &str) -> anyhow::Result<(StatusCode, Bytes)> {
     let (mut sender, conn) = hyper::client::conn::http1::handshake(stream).await?;
     tokio::task::spawn(async move {
         if let Err(err) = conn.await {
-            println!("Connection failed: {err:?}");
+            eprintln!("Connection failed: {err:?}");
         }
     });
 

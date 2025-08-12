@@ -50,9 +50,9 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             // listen_addr: "127.0.0.1:8000".to_string(),
-            rauthy_url: "https://iam.example.com".parse().unwrap(),
-            host_id: "hostIdFromRauthy".to_string(),
-            host_secret: "hostSecretFromRauthy".to_string(),
+            rauthy_url: "{{ rauthy_url }}".parse().unwrap(),
+            host_id: "{{ rauthy_host_id }}".to_string(),
+            host_secret: "{{ rauthy_host_secret }}".to_string(),
             // data_dir: data_path(),
             log_target: LogTarget::Syslog,
             danger_allow_insecure: false,
