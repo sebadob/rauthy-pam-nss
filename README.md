@@ -48,7 +48,8 @@ curl -LO https://raw.githubusercontent.com/sebadob/rauthy-pam-nss/refs/heads/mai
   && cd rauthy-pam-nss-install
 ```
 
-Then, since you should never blindly execute a random bash script from the internet, inspect `isntall.sh` and afterward:
+Then, since you should never blindly execute a random bash script from the internet, especially with `sudo`, inspect
+`install.sh` and afterward:
 
 ```bash
 sudo ./install.sh nss
