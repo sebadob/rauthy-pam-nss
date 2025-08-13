@@ -35,8 +35,8 @@ Supported features:
 - [x] Copy custom `/etc/skel_rauthy` during home dir creation
 - [x] optionally execute custom scripts on session open / close during login
 
-> While this project is even before its very first release, I will push directly to `main` for efficiency reasons and
-> don't even care about PRs.
+> This project is in a very early phase and even though many tests were done already, I expect some issues and rough
+> edges to still exist, especially when it comes to SELinux policies.
 
 ## Install TL;DR
 
