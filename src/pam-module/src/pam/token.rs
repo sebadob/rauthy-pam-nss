@@ -44,8 +44,8 @@ impl PamToken {
                 //  want. Is there maybe a nicer solution to this?
                 // we want to ignore the result here, because SELinux may not even be installed
                 let _ = Command::new("/usr/sbin/restorecon")
-                    .arg("-rv")
-                    .arg(&path)
+                    .arg("-rF")
+                    .arg(&format!("/home/{}", self.username))
                     .output();
             }
 

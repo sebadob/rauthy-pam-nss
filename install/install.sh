@@ -173,6 +173,12 @@ installSELinux() {
 
   /usr/sbin/setsebool -P nis_enabled 1
   /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-nss.pp
+
+  # The systemd_user_runtimedir_t type will typically not exist on servers without a graphical desktop
+  if /usr/bin/seinfo -t systemd_user_runtimedir_t | grep systemd_user_runtimedir_t; then
+    /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-desktop.pp
+  fi
+
   restorecon /etc/rauthy
   restorecon /etc/skel_rauthy
   restorecon /usr/bin

@@ -58,9 +58,9 @@ build-install-proxy:
 
     cargo build --release
 
-    sudo cp target/release/rauthy-nss /usr/local/sbin/
+    sudo cp target/release/rauthy-nss /usr/sbin/
 
-    sudo cp templates/authselect/rauthy-nss.service /etc/systemd/system/
+    sudo cp templates/systemd/rauthy-nss.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl start rauthy-nss
     sudo systemctl status rauthy-nss
@@ -121,7 +121,7 @@ build-install-archive:
     git add *
     cd ..
     mkdir {{ install_dir }}/selinux
-    cp selinux/rauthy-pam-nss.* {{ install_dir }}/selinux
+    cp selinux/* {{ install_dir }}/selinux
 
     tar -czf install/rauthy-pam-nss-install.tar.gz -C install ./rauthy-pam-nss-install
     git add install/rauthy-pam-nss-install.tar.gz
@@ -136,6 +136,9 @@ apply-selinux ty="local":
     #semodule_package -m rauthy-pam-nss.mod -o rauthy-pam-nss.pp && \
     make -f /usr/share/selinux/devel/Makefile
     sudo semodule -i rauthy-pam-nss.pp
+    if seinfo -t systemd_user_runtimedir_t | grep systemd_user_runtimedir_t; then
+      sudo semodule -i rauthy-pam-desktop.pp
+    fi
 
 # remove the SELinux modules
 remove-selinux:
