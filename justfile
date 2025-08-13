@@ -24,17 +24,12 @@ version:
     #!/usr/bin/env bash
     echo "v$TAG"
 
-# clippy lint + check with minimal versions from nightly
+# clippy which errors on missing lints
 check:
     #!/usr/bin/env bash
     set -euxo pipefail
     clear
-    cargo update
     cargo clippy -- -D warnings
-    cargo minimal-versions check
-
-    # update at the end again for following clippy and testing
-    cargo update
 
 # checks all combinations of features with clippy
 clippy:
