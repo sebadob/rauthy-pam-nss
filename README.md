@@ -44,7 +44,7 @@ A more detailed documentation can be found in the [Rauthy Book](https://sebadob.
 tl;dr is:
 
 ```bash
-curl -LO https://raw.githubusercontent.com/sebadob/rauthy-pam-nss/refs/heads/main/install/rauthy-pam-nss-install.tar.gz \
+curl -LO https://raw.githubusercontent.com/sebadob/rauthy-pam-nss/refs/tags/v0.1.0/install/rauthy-pam-nss-install.tar.gz \
   && tar -xzf rauthy-pam-nss-install.tar.gz \
   && cd rauthy-pam-nss-install
 ```
