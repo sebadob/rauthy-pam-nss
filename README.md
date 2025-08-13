@@ -40,7 +40,8 @@ Supported features:
 
 ## Install TL;DR
 
-A more detailed documentation can be found in the Rauthy Book. The tl;dr is:
+A more detailed documentation can be found in the [Rauthy Book](https://sebadob.github.io/rauthy/work/pam.html). The
+tl;dr is:
 
 ```bash
 curl -LO https://raw.githubusercontent.com/sebadob/rauthy-pam-nss/refs/heads/main/install/rauthy-pam-nss-install.tar.gz \
