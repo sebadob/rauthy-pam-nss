@@ -79,11 +79,14 @@ macro_rules! get_nonlocal_r_username {
 
 #[derive(Debug, PartialEq)]
 pub enum PamService {
+    Gdm,
     Login,
+    Sddm,
     Ssh,
     Sudo,
     Su,
     SystemdUser,
+    Xdm,
     Other(String),
     Unknown,
 }
@@ -173,11 +176,14 @@ impl RauthyPam {
                 }
 
                 match svc.to_lowercase().as_str() {
+                    "gdm" => PamService::Gdm,
                     "login" => PamService::Login,
+                    "sddm" => PamService::Sddm,
                     "sshd" => PamService::Ssh,
                     "sudo" | "sudo-i" => PamService::Sudo,
                     "su" | "su-l" => PamService::Su,
                     "systemd-user" => PamService::SystemdUser,
+                    "xdm" => PamService::Xdm,
                     s => PamService::Other(s.to_string()),
                 }
             }

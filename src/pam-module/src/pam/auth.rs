@@ -133,7 +133,6 @@ impl RauthyPam {
         svc: PamService,
     ) -> Result<(), PamError> {
         let config = Config::load_create(pamh)?;
-        let is_ssh = Self::is_remote_session() || svc == PamService::Ssh;
 
         let preflight = match RT.block_on(Self::preflight(
             config.rauthy_url.clone(),
@@ -151,9 +150,9 @@ impl RauthyPam {
             sys_err(pamh, &format!("Login denied for user {username}"));
             return Err(PamError::CRED_INSUFFICIENT);
         }
-        let is_local_password_only =
-            matches!(svc, PamService::Login | PamService::Sudo | PamService::Su)
-                && preflight.local_password_only;
+
+        let is_ssh = Self::is_remote_session() || svc == PamService::Ssh;
+        let is_local_password_only = preflight.local_password_only && !is_ssh;
 
         let mut login_req = PamLoginRequest {
             host_id: config.host_id.clone(),
