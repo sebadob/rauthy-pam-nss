@@ -1,6 +1,7 @@
 set shell := ["bash", "-uc"]
 
 export MSRV := `cat Cargo.toml | grep '^rust-version =' | cut -d " " -f3 | xargs`
+export TAG := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export VERSION := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
 builder_image := "ghcr.io/sebadob/rauthy-builder"
