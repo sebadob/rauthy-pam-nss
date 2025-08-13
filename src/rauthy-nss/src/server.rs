@@ -4,10 +4,11 @@ use crate::handler::groups::*;
 use crate::handler::hosts::*;
 use crate::handler::users::*;
 use axum::{Router, routing::get};
-use log::info;
+use log::{debug, info};
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+use std::process::Command;
 use tokio::fs;
 use tokio::net::UnixListener;
 
@@ -33,6 +34,11 @@ pub async fn run() -> anyhow::Result<()> {
     // TODO find a way to explicitly set the sticky bit from safe rust. Is this even possible?
     fs::set_permissions(PROXY_SOCKET, Permissions::from_mode(0o766)).await?;
 
+    // TODO not sure why this is happening, but something changes SELinux labels for the socket
+    //  between restarts. This service should run as `root`, so it will be able to restore its own
+    //  label at this point, which we will do, until the main issue was found.
+    restore_selinux_labels().await;
+
     let app = Router::new()
         .route("/", get(get_root))
         .nest(
@@ -54,4 +60,17 @@ pub async fn run() -> anyhow::Result<()> {
     axum::serve(uds, app).await?;
 
     Ok(())
+}
+
+async fn restore_selinux_labels() {
+    if fs::try_exists("/usr/sbin/restorecon").await.ok() != Some(true) {
+        debug!("/usr/sbin/restorecon not found - skipping SELinux label restore");
+        return;
+    }
+
+    let (parent, _) = PROXY_SOCKET.rsplit_once("/").unwrap();
+    let _ = Command::new("/usr/sbin/restorecon")
+        .arg("-rF")
+        .arg(parent)
+        .spawn();
 }
