@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::{CLIENT, RT, copy_dir};
 use chrono::Utc;
+use pamsm::Pam;
 use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -58,6 +59,7 @@ impl PamToken {
     }
 
     pub fn try_load(
+        pamh: &Pam,
         config: &Config,
         username: &str,
         with_validation: bool,
@@ -70,7 +72,7 @@ impl PamToken {
             };
         }
 
-        let base = config.data_path_user(username);
+        let base = config.data_path_user(pamh, username)?;
         let path = base.join("token");
 
         let bytes = fs::read(path)?;
@@ -95,8 +97,8 @@ impl PamToken {
     }
 
     #[inline]
-    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
-        let base = config.data_path_user(&self.username);
+    pub fn save(&self, pamh: &Pam, config: &Config) -> anyhow::Result<()> {
+        let base = config.data_path_user(pamh, &self.username)?;
         let path = base.join("token");
 
         let bytes = bincode::serde::encode_to_vec(self, bincode::config::standard())?;
