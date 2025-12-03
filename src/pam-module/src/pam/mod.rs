@@ -23,7 +23,7 @@ macro_rules! load_config_token {
             }
         };
 
-        let token = match PamToken::try_load(&config, $username, $validate) {
+        let token = match PamToken::try_load($pamh, &config, $username, $validate) {
             Ok(t) => t,
             Err(err) => {
                 sys_err($pamh, &format!("Error loading PAM token: {err}"));

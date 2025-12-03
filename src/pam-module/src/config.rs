@@ -34,15 +34,20 @@ fn data_path() -> PathBuf {
 
 impl Config {
     #[inline]
-    pub fn data_path_user(&self, username: &str) -> PathBuf {
+    pub fn data_path_user(&self, pamh: &Pam, username: &str) -> anyhow::Result<PathBuf> {
         let path = self.data_path.join(username);
 
-        // these should never panic, when we were able to create and parse config beforehand
-        fs::create_dir_all(&path).expect("Cannot create user data dir");
-        fs::set_permissions(&path, Permissions::from_mode(0o600))
-            .expect("Cannot set permissions on user data dir");
+        fs::create_dir_all(&path).inspect_err(|err| {
+            sys_err(pamh, &format!("Error creating path for config file: {err}"));
+        })?;
+        fs::set_permissions(&path, Permissions::from_mode(0o600)).inspect_err(|err| {
+            sys_err(
+                pamh,
+                &format!("Error setting permissions for config file: {err}"),
+            );
+        })?;
 
-        path
+        Ok(path)
     }
 
     pub fn load_create(pamh: &Pam) -> Result<Self, PamError> {
