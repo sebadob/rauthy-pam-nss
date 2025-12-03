@@ -64,3 +64,19 @@ data_path = '/var/lib/pam_rauthy'
 # or sshd login, but NOT when you e.g. do an `su - <user>`.
 #exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
 #exec_session_close = '/var/lib/pam_rauthy/session_close.sh'
+
+# Define intervals for health checks. If a health check fails,
+# NSS will not even try sending out requests until the status
+# is back healthy to avoid excessive network requests during
+# downtime.
+#
+# default: 30
+health_check_interval_healthy = 30
+#
+# Note: If you have an unstable network, like e.g. Wifi or similar,
+# you can decrease the unhealthy checks down to 1 second to reduce
+# the time it takes until your machine can resolve users again.
+# However, you avoid setting it to 0 on a heavily used machine.
+#
+# default: 3
+health_check_interval_unhealthy = 3

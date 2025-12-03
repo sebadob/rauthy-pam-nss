@@ -40,6 +40,8 @@ pub struct Config {
     pub cache_ttl_hosts: u32,
     pub cache_ttl_users: u32,
     pub cache_flush_interval: u64,
+    pub health_check_interval_healthy: u64,
+    pub health_check_interval_unhealthy: u64,
 }
 
 fn bool_false() -> bool {
@@ -61,6 +63,8 @@ impl Default for Config {
             cache_ttl_hosts: 30,
             cache_ttl_users: 30,
             cache_flush_interval: 900,
+            health_check_interval_healthy: 30,
+            health_check_interval_unhealthy: 3,
         }
     }
 }

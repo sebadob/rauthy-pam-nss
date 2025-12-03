@@ -15,20 +15,30 @@ struct HealthResponse {
 
 pub fn spawn_health_checker() {
     task::spawn(async {
-        let mut interval = time::interval(Duration::from_secs(30));
         loop {
-            interval.tick().await;
+            let currently_healthy = RAUTHY_HEALTHY.load(Ordering::Relaxed);
+
+            if currently_healthy {
+                time::sleep(Duration::from_secs(
+                    Config::get().health_check_interval_healthy,
+                ))
+                .await;
+            } else {
+                time::sleep(Duration::from_secs(
+                    Config::get().health_check_interval_unhealthy,
+                ))
+                .await;
+            }
 
             info!("Running health check");
-            let current = RAUTHY_HEALTHY.load(Ordering::Relaxed);
             if is_rauthy_healthy().await {
-                if !current {
+                if !currently_healthy {
                     info!("Connection to Rauthy successful and Rauthy is healthy");
                     RAUTHY_HEALTHY.store(true, Ordering::Relaxed);
                 }
             } else {
                 warn!("Cannot connect to Rauthy or it's unhealthy");
-                if current {
+                if currently_healthy {
                     RAUTHY_HEALTHY.store(false, Ordering::Relaxed);
                 }
             }
