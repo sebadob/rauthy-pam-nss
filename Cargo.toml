@@ -3,7 +3,7 @@ resolver = "3"
 members = ["src/*"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0-20251205"
 edition = "2024"
 authors = ["Sebastian Dobe <sebastiandobe@mailbox.org>"]
 license = "GPLv3"
