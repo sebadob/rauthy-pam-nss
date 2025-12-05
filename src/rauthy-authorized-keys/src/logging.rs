@@ -14,7 +14,7 @@ fn init_syslog() -> anyhow::Result<()> {
     let formatter = Formatter3164 {
         facility: Facility::LOG_SYSLOG,
         hostname: None,
-        process: "Rauthy NSS Proxy".into(),
+        process: "Rauthy AuthorizedKeys Lookup".into(),
         pid: process::id(),
     };
 
@@ -39,12 +39,16 @@ fn init_file_console_log(config: &Config) -> anyhow::Result<()> {
 
     if target == &LogTarget::ConsoleFile || target == &LogTarget::File {
         let trigger = SizeTrigger::new(10 * 1024 * 1024);
-        let roller = FixedWindowRoller::builder().build("/var/log/rauthy/rauthy-nss.{}.log", 5)?;
+        let roller = FixedWindowRoller::builder()
+            .build("/var/log/rauthy/rauthy-authorized-keys.{}.log", 5)?;
         let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
 
         let file = RollingFileAppender::builder()
             .encoder(Box::new(PatternEncoder::new("{d} {m}{n}")))
-            .build("/var/log/rauthy/rauthy-nss.log", Box::new(policy))?;
+            .build(
+                "/var/log/rauthy/rauthy-authorized-keys.log",
+                Box::new(policy),
+            )?;
 
         builder = builder.appender(Appender::builder().build("file", Box::new(file)));
         builder_root = builder_root.appender("file");
