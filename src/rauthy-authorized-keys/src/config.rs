@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fs;
 
 #[cfg(debug_assertions)]
@@ -6,21 +6,11 @@ pub static PATH: &str = "./rauthy-pam-nss.toml";
 #[cfg(not(debug_assertions))]
 pub static PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum LogTarget {
-    Console,
-    File,
-    ConsoleFile,
-    Syslog,
-}
-
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub rauthy_url: String,
     pub host_id: String,
     pub host_secret: String,
-    pub log_target: LogTarget,
     #[serde(default = "bool_false")]
     pub danger_allow_insecure: bool,
 }

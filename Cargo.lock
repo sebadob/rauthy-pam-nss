@@ -2037,11 +2037,8 @@ name = "rauthy-authorized-keys"
 version = "0.2.0-20251205"
 dependencies = [
  "anyhow",
- "log",
- "log4rs",
  "reqwest",
  "serde",
- "syslog",
  "toml",
 ]
 

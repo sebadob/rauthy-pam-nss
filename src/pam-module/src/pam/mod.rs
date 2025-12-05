@@ -26,8 +26,12 @@ macro_rules! load_config_token {
         let token = match PamToken::try_load($pamh, &config, $username, $validate) {
             Ok(t) => t,
             Err(err) => {
-                sys_err($pamh, &format!("Error loading PAM token: {err}"));
-                return PamError::SERVICE_ERR;
+                if $validate {
+                    sys_err($pamh, &format!("Error loading PAM token: {err}"));
+                    return PamError::SERVICE_ERR;
+                } else {
+                    None
+                }
             }
         };
 
@@ -207,12 +211,30 @@ impl PamServiceModule for RauthyPam {
         } else {
             get_nonlocal_username!(&pamh)
         };
-        let (config, token) = load_config_token!(&pamh, username, true);
+        let (config, token) = load_config_token!(&pamh, username, false);
 
         if let Some(token) = token
             && token.validate(config).is_ok()
         {
-            PamError::SUCCESS
+            return PamError::SUCCESS;
+        }
+
+        if svc == PamService::Ssh {
+            // If the SSH auth was done via Public Key Creds, we will NOT have a PamToken
+            // at this step. This is to be expected, because we would get one after the
+            // `authenticate` only, which is skipped during public key auth. We need to check
+            // the user validity at this point instead, but only if the service is ssh.
+
+            match Self::handle_authenticate(&pamh, username, svc, true) {
+                Ok(_) => PamError::SUCCESS,
+                Err(err) => {
+                    sys_err(
+                        &pamh,
+                        &format!("Rauthy PAM login authorization failed with {err}"),
+                    );
+                    err
+                }
+            }
         } else {
             PamError::AUTHINFO_UNAVAIL
         }
@@ -228,9 +250,10 @@ impl PamServiceModule for RauthyPam {
         } else {
             get_nonlocal_username!(&pamh)
         };
+        eprintln!("authenticate username: {username} with svc {svc:?}");
         // println!("authenticate username: {username}");
 
-        match Self::handle_authenticate(&pamh, username, svc) {
+        match Self::handle_authenticate(&pamh, username, svc, false) {
             Ok(_) => PamError::SUCCESS,
             Err(err) => {
                 sys_err(&pamh, &format!("Rauthy PAM login failed with {err}"));
