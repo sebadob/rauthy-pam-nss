@@ -81,6 +81,7 @@ build-install-archive:
         cargo build --release --target x86_64-unknown-linux-gnu
     mkdir -p {{ install_dir }}/x86_64
     cp target/x86_64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/x86_64/
+    cp target/x86_64-unknown-linux-gnu/release/rauthy-authorized-keys {{ install_dir }}/x86_64/
     cp target/x86_64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/x86_64/pam_rauthy.so
     cp target/x86_64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/x86_64/libnss_rauthy.so.2
 
@@ -96,6 +97,7 @@ build-install-archive:
     #    cargo build --release --target aarch64-unknown-linux-gnu
     #mkdir -p {{ install_dir }}/aarch64
     #cp target/aarch64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/aarch64/
+    #cp target/aarch64-unknown-linux-gnu/release/rauthy-authorized-keys {{ install_dir }}/aarch64/
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/aarch64/pam_rauthy.so
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/aarch64/libnss_rauthy.so.2
     cp -r install/aarch64 {{ install_dir }}/
@@ -197,6 +199,9 @@ run ty="auth": install-pam
     elif [[ {{ ty }} == "authtok" ]]; then
       sudo pamtester {{ pam_file }} {{ test_user }} chauthtok
     fi
+
+ssh-keys username="":
+    cargo run --package rauthy-authorized-keys -- {{ username }}
 
 # makes sure everything is fine
 verify: check

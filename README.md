@@ -29,6 +29,7 @@ Supported features:
   account dashboard
 - [x] ssh into a host with a non-existent, Rauthy-managed user with PAM Remote Password - both default password and
   MFA-secured accounts
+- [x] ssh login via public keys uploaded to Rauthy + `AuthorizedKeysCommand`
 - [x] `sudo` on remote host via SSH session - can be achieved by adding `%wheel-rauthy   ALL=(ALL)   ALL`
   to `/etc/sudoers`
 - [x] Login to window managers like `gdm` or `sddm`

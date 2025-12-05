@@ -2033,6 +2033,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rauthy-authorized-keys"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "log4rs",
+ "reqwest",
+ "serde",
+ "syslog",
+ "toml",
+]
+
+[[package]]
 name = "rauthy-nss"
 version = "0.1.0"
 dependencies = [
@@ -2152,7 +2165,9 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
+ "futures-channel",
  "futures-core",
+ "futures-util",
  "h2",
  "hickory-resolver",
  "http",

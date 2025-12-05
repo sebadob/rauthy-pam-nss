@@ -1,6 +1,5 @@
 use crate::pam::sys_err;
 use pamsm::{Pam, PamError};
-use reqwest::Url;
 use serde::Deserialize;
 use std::fs;
 use std::fs::{File, Permissions};
@@ -17,7 +16,7 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub rauthy_url: Url,
+    pub rauthy_url: reqwest::Url,
     pub host_id: String,
     pub host_secret: String,
     #[serde(default = "data_path")]
