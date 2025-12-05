@@ -4,6 +4,10 @@ set -euo pipefail
 
 ROOT="$(dirname "$(realpath "$0")")"
 
+# hashes or earlier versions to identify the currently installed version for updating
+V_0_1_0_HASH_PAM_AARCH64="df512eef02791129bde08bd5363887ae53ec12e9674dd442a484b200102206a7"
+V_0_1_0_HASH_PAM_X86_x64="65d20b84c3cd336fa4e1c4cd4a7ce72b46d238121e2850f24731f19cec56336d"
+
 chmod() {
   /usr/bin/chmod "$@"
 }
@@ -50,6 +54,10 @@ sed() {
 
 sleep() {
   /usr/bin/sleep $1
+}
+
+sha256check() {
+  /usr/bin/echo $1 $2 | /usr/bin/sha256sum -c
 }
 
 systemctl() {
@@ -103,12 +111,46 @@ unknown_distro() {
   exit 1
 }
 
+isInstalledVersion() {
+  # Use the hash of the currently existing PAM module to find out the version.
+  # Currently, there can only be v0.1.0 - needs to be updated in the future.
+  PATH=""
+  if is_rhel; then
+    PATH="/lib64/security/pam_rauthy.so"
+  elif  is_debian; then
+    PATH="/lib/x86_64-linux-gnu/security/pam_rauthy.so"
+  else
+    unknown_distro
+    return 1
+  fi
+
+  ARCH=$(/usr/bin/uname -m)
+  if [[ $ARCH == "x86_64" ]];then
+    if [[ $1 == "0.1.0" ]]; then
+      if sha256check $V_0_1_0_HASH_PAM_X86_x64 $PATH; then
+        return 0
+      fi
+    # update in future versions with earlier released hash
+    fi
+
+  elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
+    if [[ $1 == "0.1.0" ]]; then
+      if sha256check $V_0_1_0_HASH_PAM_AARCH64 $PATH; then
+        return 0
+      fi
+    # update in future versions with earlier released hash
+    fi
+  fi
+
+  return 1
+}
+
 createConfig () {
   mkdir /etc/rauthy
   chmod 0600 /etc/rauthy
 
   if test -f /etc/rauthy/rauthy-pam-nss.toml ; then
-    mv /etc/rauthy/rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml.$(date +%s)
+    mv /etc/rauthy/rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml.$(/usr/bin/date +%s)
   fi
   cp "$ROOT"/rauthy-pam-nss.toml /etc/rauthy/rauthy-pam-nss.toml
   chmod 0600 /etc/rauthy/rauthy-pam-nss.toml
@@ -175,7 +217,7 @@ installSELinux() {
   /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-nss.pp
 
   # The systemd_user_runtimedir_t type will typically not exist on servers without a graphical desktop
-  if /usr/bin/seinfo -t systemd_user_runtimedir_t | grep systemd_user_runtimedir_t; then
+  if /usr/bin/seinfo -t systemd_user_runtimedir_t | /usr/bin/grep systemd_user_runtimedir_t; then
     /usr/sbin/semodule -i "$ROOT"/selinux/rauthy-pam-desktop.pp
   fi
 
@@ -189,6 +231,33 @@ installSELinux() {
   restorecon /var/lib/pam_rauthy
 
   echo "SEModule named rauthy-pam-nss installed and nis_enabled boolean set"
+}
+
+installAuthorizedKeys() {
+  ARCH=$(/usr/bin/uname -m)
+  if [[ $ARCH == "x86_64" ]];then
+    cp "$ROOT"/x86_64/rauthy-authorized-keys /usr/sbin/
+  elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
+    cp "$ROOT"/aarch64/rauthy-authorized-keys /usr/sbin/
+  else
+    unknown_distro
+  fi
+  chmod 0700 /usr/sbin/rauthy-authorized-keys
+  restorecon /usr/sbin/rauthy-authorized-keys
+
+  echo "
+
+You can make use of SSH public keys added to Rauthys
+Account Dashboard. You can test it manually with something like:
+
+  rauthy-authorized-keys rauthy_pam_user_name_with_pubkey
+
+Or add it to your sshd_config directly:
+
+  AuthorizedKeysCommand /usr/sbin/rauthy-authorized-keys
+  AuthorizedKeysCommandUser root
+
+"
 }
 
 installNSS () {
@@ -242,7 +311,7 @@ will already be persistent.
 
   echo "Copying systemd service file into place"
   cp "$ROOT"/rauthy-nss.service /etc/systemd/system/rauthy-nss.service
-  echo "Reloading daemon and enableing rauthy-nss.service"
+  echo "Reloading daemon and enabling rauthy-nss.service"
   systemctl daemon-reload
   systemctl enable rauthy-nss --now
 
@@ -250,7 +319,7 @@ will already be persistent.
   if ! test -f /etc/nsswitch.conf.bak-non-rauthy; then
     cp /etc/nsswitch.conf /etc/nsswitch.conf.bak-non-rauthy
   fi
-  cp /etc/nsswitch.conf /etc/nsswitch.conf.$(date +%s)
+  cp /etc/nsswitch.conf /etc/nsswitch.conf.$(/usr/bin/date +%s)
   if is_rhel; then
     cp "$ROOT"/pam/rhel/nsswitch.conf /etc/nsswitch.conf
   elif is_debian; then
@@ -262,7 +331,7 @@ will already be persistent.
 
   SUCCESS=false
   for i in {1..10}; do
-    if grep 'This Host:' /var/log/rauthy/rauthy-nss.log > /dev/null; then
+    if /usr/bin/grep 'This Host:' /var/log/rauthy/rauthy-nss.log > /dev/null; then
       SUCCESS=true
       break
     fi
@@ -366,11 +435,15 @@ configuration may lock you our of your system.
       fi
       break
     elif [[ $VALUE == [nN][oO] || $VALUE == [n] ]]; then
+      # unset value if it has been set before
+      if /usr/bin/grep ^%wheel-rauthy /etc/sudoers; then
+        sed -i "s/%wheel-rauthy/#%wheel-rauthy/g" /etc/sudoers
+      fi
       break
     fi
   done
 
-  ARCH=$(uname -m)
+  ARCH=$(/usr/bin/uname -m)
   if [[ $ARCH == "x86_64" ]];then
 
     if is_rhel; then
@@ -407,6 +480,13 @@ configuration may lock you our of your system.
   else
     echo "Unsupported architecture"
     exit 1
+  fi
+
+  # We do not want to mess up existing PAM configs.
+  # They are pretty likely customized already.
+  if [[ "update" == "$1" ]]; then
+    echo "PAM module updated"
+    return 0
   fi
 
   if command authselect; then
@@ -453,8 +533,8 @@ broken PAM setup can lock you out of your own system!
         cp /etc/pam.d/password-auth /etc/pam.d/password-auth.bak-non-rauthy
       fi
 
-      cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(date +%s)
-      cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(date +%s)
+      cp /etc/pam.d/system-auth /etc/pam.d/system-auth.$(/usr/bin/date +%s)
+      cp /etc/pam.d/password-auth /etc/pam.d/password-auth.$(/usr/bin/date +%s)
 
       cp "$ROOT"/pam/rhel/system-auth /etc/pam.d/system-auth
       restorecon /etc/pam.d/system-auth
@@ -476,10 +556,10 @@ broken PAM setup can lock you out of your own system!
         cp /etc/pam.d/common-session /etc/pam.d/common-session.bak-non-rauthy
       fi
 
-      cp /etc/pam.d/common-auth /etc/pam.d/common-auth.$(date +%s)
-      cp /etc/pam.d/common-password /etc/pam.d/common-password.$(date +%s)
-      cp /etc/pam.d/common-account /etc/pam.d/common-account.$(date +%s)
-      cp /etc/pam.d/common-session /etc/pam.d/common-session.$(date +%s)
+      cp /etc/pam.d/common-auth /etc/pam.d/common-auth.$(/usr/bin/date +%s)
+      cp /etc/pam.d/common-password /etc/pam.d/common-password.$(/usr/bin/date +%s)
+      cp /etc/pam.d/common-account /etc/pam.d/common-account.$(/usr/bin/date +%s)
+      cp /etc/pam.d/common-session /etc/pam.d/common-session.$(/usr/bin/date +%s)
 
       cp "$ROOT"/pam/debian/common-auth /etc/pam.d/common-auth
       cp "$ROOT"/pam/debian/common-password /etc/pam.d/common-password
@@ -501,17 +581,93 @@ out of your own system!
   fi
 }
 
+update () {
+  if ! test -f /etc/rauthy/rauthy-pam-nss.toml ; then
+    echo "/etc/rauthy/rauthy-pam-nss.toml does not exist - this is not an update"
+    exit 1
+  fi
+
+  # we can do specific updates for each version here
+  if isInstalledVersion "0.1.0"; then
+
+    if ! /usr/bin/grep ^health_check_interval_healthy /etc/rauthy/rauthy-pam-nss.toml; then
+      echo "
+# You can execute custom scripts on session open / close.
+# For the session open, it will be executed as the very last
+# step, after the home dir was created. This can be used for
+# instance to mount user home dirs via NFS or things like that.
+#
+# You cannot specify a complex command with options and must
+# provide only the path to a script. Arguments will be
+# automatically added in the following order:
+#
+# ./my_script.sh <username> <uid> <gid> <rauthy_user_id> <rauthy_user_email>
+#
+# CAUTION: These scripts will be executed as root!
+# You MUST MAKE SURE that only root can modify them!
+# -> chmod 0700 path/to/script
+#
+# NOTE: These scripts will only be executed during local login
+# or sshd login, but NOT when you e.g. do an 'su - <user>'.
+#exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
+#exec_session_close = '/var/lib/pam_rauthy/session_close.sh'
+
+# Define intervals for health checks. If a health check fails,
+# NSS will not even try sending out requests until the status
+# is back healthy to avoid excessive network requests during
+# downtime.
+#
+# default: 30
+health_check_interval_healthy = 30
+#
+# Note: If you have an unstable network, like e.g. Wifi or similar,
+# you can decrease the unhealthy checks down to 1 second to reduce
+# the time it takes until your machine can resolve users again.
+# However, you avoid setting it to 0 on a heavily used machine.
+#
+# default: 3
+health_check_interval_unhealthy = 3
+" >> /etc/rauthy/rauthy-pam-nss.toml
+    fi
+
+  else
+    echo "Could not find already installed version or mismatching SHA256 hashes found"
+    exit 1
+  fi
+
+  echo "Version check ok. Proceeding with update"
+  echo ""
+
+  # double check and restore permissions
+  chmod 0600 /etc/rauthy/rauthy-pam-nss.toml
+  chmod 755 /var/lib/pam_rauthy
+  chmod 700 /var/lib/pam_rauthy/session_*
+  restorecon /etc/rauthy
+  restorecon /var/lib/pam_rauthy
+
+  #installAppArmor
+  installSELinux
+  installAuthorizedKeys
+  installNSS
+  installPAM "update"
+
+  echo "Update finished"
+}
+
 is_root
-is_x86_64
+
 if [ "$1" == 'nss' ]; then
   createConfig
   #installAppArmor
   installSELinux
+  installAuthorizedKeys
   installNSS
 elif [ "$1" == 'pam' ]; then
-  installPAM
+  installPAM "install"
+elif [ "$1" == 'update' ]; then
+  update
 else
-  echo "Unknown arg given, must be one of: nss pam"
+  echo "Unknown arg given, must be one of: nss pam update"
   exit 1
 fi
 
