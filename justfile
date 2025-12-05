@@ -5,7 +5,7 @@ export TAG := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export VERSION := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
 builder_image := "ghcr.io/sebadob/rauthy-builder"
-builder_tag_date := "20250804"
+builder_tag_date := "20251203"
 cargo_home := `echo ${CARGO_HOME:-$HOME/.cargo}`
 container_cargo_registry := "/usr/local/cargo/registry"
 docker := `echo ${DOCKER:-docker}`
@@ -81,6 +81,7 @@ build-install-archive:
         cargo build --release --target x86_64-unknown-linux-gnu
     mkdir -p {{ install_dir }}/x86_64
     cp target/x86_64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/x86_64/
+    cp target/x86_64-unknown-linux-gnu/release/rauthy-authorized-keys {{ install_dir }}/x86_64/
     cp target/x86_64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/x86_64/pam_rauthy.so
     cp target/x86_64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/x86_64/libnss_rauthy.so.2
 
@@ -96,6 +97,7 @@ build-install-archive:
     #    cargo build --release --target aarch64-unknown-linux-gnu
     #mkdir -p {{ install_dir }}/aarch64
     #cp target/aarch64-unknown-linux-gnu/release/rauthy-nss {{ install_dir }}/aarch64/
+    #cp target/aarch64-unknown-linux-gnu/release/rauthy-authorized-keys {{ install_dir }}/aarch64/
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_pam.so {{ install_dir }}/aarch64/pam_rauthy.so
     #cp target/aarch64-unknown-linux-gnu/release/librauthy_nss.so {{ install_dir }}/aarch64/libnss_rauthy.so.2
     cp -r install/aarch64 {{ install_dir }}/
@@ -197,6 +199,9 @@ run ty="auth": install-pam
     elif [[ {{ ty }} == "authtok" ]]; then
       sudo pamtester {{ pam_file }} {{ test_user }} chauthtok
     fi
+
+ssh-keys username="":
+    cargo run --package rauthy-authorized-keys -- {{ username }}
 
 # makes sure everything is fine
 verify: check
