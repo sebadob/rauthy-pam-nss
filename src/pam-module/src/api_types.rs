@@ -8,6 +8,12 @@ pub struct PamLoginRequest {
     pub password: Option<String>,
     pub remote_password: Option<String>,
     pub webauthn_code: Option<String>,
+    /// Setting this means a `PamToken` will be generated without any additional user authentication
+    /// validation! Only authorization will be checked!
+    ///
+    /// You MUST only set this on a client, if you did the authentication with local data, like
+    /// e.g. an SSH login with public key authentication!
+    pub danger_auth_checked_locally: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]

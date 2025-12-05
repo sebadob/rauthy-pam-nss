@@ -131,6 +131,7 @@ impl RauthyPam {
         pamh: &Pam,
         username: &str,
         svc: PamService,
+        danger_auth_checked_locally: bool,
     ) -> Result<(), PamError> {
         let config = Config::load_create(pamh)?;
 
@@ -161,9 +162,17 @@ impl RauthyPam {
             password: None,
             remote_password: None,
             webauthn_code: None,
+            danger_auth_checked_locally: None,
         };
 
-        if preflight.mfa_required && !is_ssh && !is_local_password_only {
+        if is_ssh && danger_auth_checked_locally {
+            // This will fetch a PamToken without authentication. Necessary for e.g. SSH logins
+            // via public key. In these cases, the PAM auth step will never be called, because
+            // `sshd` takes care of the authentication via authorized keys. It will then call the
+            // acc management PAM step, which will not have a valid PamToken. This step exists to
+            // be able to still to the authorization in the acc management phase.
+            login_req.danger_auth_checked_locally = Some(true);
+        } else if preflight.mfa_required && !is_ssh && !is_local_password_only {
             match RT.block_on(Self::mfa(
                 pamh,
                 config.rauthy_url.clone(),
