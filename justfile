@@ -5,7 +5,7 @@ export TAG := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export VERSION := `cat Cargo.toml | grep '^version =' | cut -d " " -f3 | xargs`
 export USER := `echo "$(id -u):$(id -g)"`
 builder_image := "ghcr.io/sebadob/rauthy-builder"
-builder_tag_date := "20250804"
+builder_tag_date := "20251203"
 cargo_home := `echo ${CARGO_HOME:-$HOME/.cargo}`
 container_cargo_registry := "/usr/local/cargo/registry"
 docker := `echo ${DOCKER:-docker}`
