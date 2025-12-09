@@ -3,8 +3,8 @@ rauthy_url = "http://localhost:8080"
 
 # Access credentials for this host.
 # TODO Rauthy could implement an origin IP check during lookups.
-host_id = "cuLAdJRLVRRhgmpTlKbhKnSb"
-host_secret = "ODhWTylvLNkrhiVTCZgWUvFoStkDuZZuekoCdNLIvZygKSgffEAqepWwspmQGXgD"
+host_id = "ORfSfzyWMFitlsLYZBgqczCZ"
+host_secret = "tPXqvKcBSJOuCPiOvDKBLUbMKhijjxpUzNOpWFNdXTJtiVFFPhmLBwKhCFIhBMIY"
 
 # console | file | console_file | syslog
 log_target = "console"
@@ -65,3 +65,39 @@ cache_flush_interval = 900
 # or sshd login, but NOT when you e.g. do an `su - <user>`.
 exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
 exec_session_close = '/var/lib/pam_rauthy/session_close.sh'
+
+# You can execute custom scripts on session open / close.
+# For the session open, it will be executed as the very last
+# step, after the home dir was created. This can be used for
+# instance to mount user home dirs via NFS or things like that.
+#
+# You cannot specify a complex command with options and must
+# provide only the path to a script. Arguments will be
+# automatically added in the following order:
+#
+# ./my_script.sh <username> <uid> <gid> <rauthy_user_id> <rauthy_user_email>
+#
+# CAUTION: These scripts will be executed as `root`!
+# You MUST MAKE SURE that only `root` can modify them!
+# -> `chmod 0700 path/to/script`
+#
+# NOTE: These scripts will only be executed during local login
+# or sshd login, but NOT when you e.g. do an `su - <user>`.
+#exec_session_open = '/var/lib/pam_rauthy/session_open.sh'
+#exec_session_close = '/var/lib/pam_rauthy/session_close.sh'
+
+# Define intervals for health checks. If a health check fails,
+# NSS will not even try sending out requests until the status
+# is back healthy to avoid excessive network requests during
+# downtime.
+#
+# default: 30
+health_check_interval_healthy = 30
+#
+# Note: If you have an unstable network, like e.g. Wifi or similar,
+# you can decrease the unhealthy checks down to 1 second to reduce
+# the time it takes until your machine can resolve users again.
+# However, you avoid setting it to 0 on a heavily used machine.
+#
+# default: 3
+health_check_interval_unhealthy = 3

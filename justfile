@@ -200,6 +200,7 @@ run ty="auth": install-pam
       sudo pamtester {{ pam_file }} {{ test_user }} chauthtok
     fi
 
+# run the AuthorizedKeys app
 ssh-keys username="":
     cargo run --package rauthy-authorized-keys -- {{ username }}
 
