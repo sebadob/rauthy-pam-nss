@@ -82,6 +82,21 @@ backups of config files and then copy the Rauthy configs in place directly.
 **CAUTION:** Make sure to test all the logins and things that should work at this point BEFORE logging out. Keep a
 backup session open, just in case something broke. Incorrectly configured PAM modules can lock you out of your machine!
 
+## Build from source
+
+You can of course build from source as well. Either because you trust it more (you actually should), or if you need to
+support an older architecture. Just checkout the repo and
+
+```
+cargo build --release
+```
+
+You will then find your modules in `target/release/`. You can then copy these in the correct folder from the extracted
+install-archive, depending on your arch.
+
+> Node: You may need to install some dev dependencies, most probably openssl-devel. These have different names and you
+> may need to look them up somewhere.
+
 ## Limitations
 
 Everything you need to do via SSH should be fine, as long as your configuration supports it. However, there is currently
