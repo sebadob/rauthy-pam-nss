@@ -3,7 +3,7 @@ resolver = "3"
 members = ["src/*"]
 
 [workspace.package]
-version = "0.2.0-20251205"
+version = "0.2.0"
 edition = "2024"
 authors = ["Sebastian Dobe <sebastiandobe@mailbox.org>"]
 license = "GPLv3"
@@ -20,7 +20,7 @@ anyhow = "1.0.98"
 bincode = { version = "2", features = ["serde"] }
 chrono = "0.4.41"
 dotenvy = "0.15.7"
-flume = "0.11"
+flume = "0.12"
 futures = "0.3.31"
 http-body-util = "0.1"
 hyper = { version = "1.6", features = ["full"] }

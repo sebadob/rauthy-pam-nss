@@ -122,7 +122,6 @@ build-install-archive:
     cp selinux/* {{ install_dir }}/selinux
 
     tar -czf install/rauthy-pam-nss-install.tar.gz -C install ./rauthy-pam-nss-install
-    git add install/rauthy-pam-nss-install.tar.gz
 
 # build the SELinux module from selinux/ and apply it (ty == local / nis / nss / ssh)
 apply-selinux ty="local":
@@ -200,6 +199,7 @@ run ty="auth": install-pam
       sudo pamtester {{ pam_file }} {{ test_user }} chauthtok
     fi
 
+# run the AuthorizedKeys app
 ssh-keys username="":
     cargo run --package rauthy-authorized-keys -- {{ username }}
 

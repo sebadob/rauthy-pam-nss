@@ -29,7 +29,7 @@ Supported features:
   account dashboard
 - [x] ssh into a host with a non-existent, Rauthy-managed user with PAM Remote Password - both default password and
   MFA-secured accounts
-- [x] ssh login via public keys uploaded to Rauthy + `AuthorizedKeysCommand`
+- [x] ssh login via public keys uploaded to Rauthy + `AuthorizedKeysCommand`.
 - [x] `sudo` on remote host via SSH session - can be achieved by adding `%wheel-rauthy   ALL=(ALL)   ALL`
   to `/etc/sudoers`
 - [x] Login to window managers like `gdm` or `sddm`
@@ -53,6 +53,16 @@ curl -LO https://raw.githubusercontent.com/sebadob/rauthy-pam-nss/refs/tags/v0.1
 Then, since you should never blindly execute a random bash script from the internet, especially with `sudo`, inspect
 `install.sh` and afterward:
 
+### Update
+
+If you are upgrading from an earlier version, download the installation files as usual, and execute the script with:
+
+```bash
+sudo ./install.sh update
+```
+
+### Fresh Installation
+
 ```bash
 sudo ./install.sh nss
 ```
@@ -71,6 +81,21 @@ backups of config files and then copy the Rauthy configs in place directly.
 
 **CAUTION:** Make sure to test all the logins and things that should work at this point BEFORE logging out. Keep a
 backup session open, just in case something broke. Incorrectly configured PAM modules can lock you out of your machine!
+
+## Build from source
+
+You can of course build from source as well. Either because you trust it more (you actually should), or if you need to
+support an older architecture. Just checkout the repo and
+
+```
+cargo build --release
+```
+
+You will then find your modules in `target/release/`. You can then copy these in the correct folder from the extracted
+install-archive, depending on your arch.
+
+> Node: You may need to install some dev dependencies, most probably openssl-devel. These have different names and you
+> may need to look them up somewhere.
 
 ## Limitations
 
