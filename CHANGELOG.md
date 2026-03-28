@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1
+
+This is a tiny bugfix release. Apart from bumping some external dependencies versions, this only removes a forgotten
+debug log output in the PAM module -> acc management. This part of the module should never output anything. The log had
+the potential to throw off some applications like e.g. a graphical `sudo` and so on.
+
 ## v0.2.0
 
 ### Changes
