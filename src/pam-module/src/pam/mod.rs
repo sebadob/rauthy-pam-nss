@@ -205,7 +205,6 @@ impl PamServiceModule for RauthyPam {
         debug(&pamh, "acct_mgmt");
 
         let svc = Self::get_service(&pamh);
-        println!("acct_mgmt svc {svc:?}");
         let username = if matches!(svc, PamService::Sudo | PamService::Su) {
             get_nonlocal_r_username!(&pamh)
         } else {

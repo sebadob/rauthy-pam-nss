@@ -7,6 +7,6 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-reqwest = { workspace = true, features = ["blocking", "hickory-dns", "rustls-tls"] }
+reqwest = { workspace = true, features = ["blocking", "hickory-dns"] }
 serde.workspace = true
 toml.workspace = true

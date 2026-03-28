@@ -8,6 +8,9 @@ ROOT="$(dirname "$(realpath "$0")")"
 V_0_1_0_HASH_PAM_AARCH64="df512eef02791129bde08bd5363887ae53ec12e9674dd442a484b200102206a7"
 V_0_1_0_HASH_PAM_X86_x64="65d20b84c3cd336fa4e1c4cd4a7ce72b46d238121e2850f24731f19cec56336d"
 
+V_0_2_0_HASH_PAM_AARCH64="1cc4a3aa3cc1ac33fa9923279007496fb0e5f1578f535534cfb1b3e644359b74"
+V_0_2_0_HASH_PAM_X86_x64="b1a9ac0405f7ea2a4c3d25906f13657b05054b87682f357ef4262de6cc0f71ff"
+
 chmod() {
   /usr/bin/chmod "$@"
 }
@@ -117,7 +120,7 @@ isInstalledVersion() {
   PATH=""
   if is_rhel; then
     PATH="/lib64/security/pam_rauthy.so"
-  elif  is_debian; then
+  elif is_debian; then
     PATH="/lib/x86_64-linux-gnu/security/pam_rauthy.so"
   else
     unknown_distro
@@ -130,11 +133,19 @@ isInstalledVersion() {
       if sha256check $V_0_1_0_HASH_PAM_X86_x64 $PATH; then
         return 0
       fi
+    elif [[ $1 == "0.2.0" ]]; then
+      if sha256check $V_0_2_0_HASH_PAM_X86_x64 $PATH; then
+        return 0
+      fi
     # update in future versions with earlier released hash
     fi
 
   elif [[ $ARCH == "aarch64" || $ARCH == "arm64" ]]; then
     if [[ $1 == "0.1.0" ]]; then
+      if sha256check $V_0_1_0_HASH_PAM_AARCH64 $PATH; then
+        return 0
+      fi
+    elif [[ $1 == "0.2.0" ]]; then
       if sha256check $V_0_1_0_HASH_PAM_AARCH64 $PATH; then
         return 0
       fi
@@ -589,6 +600,7 @@ update () {
 
   # we can do specific updates for each version here
   if isInstalledVersion "0.1.0"; then
+    echo "Upgrading from v0.1.0"
 
     if ! /usr/bin/grep ^health_check_interval_healthy /etc/rauthy/rauthy-pam-nss.toml; then
       echo "
@@ -629,6 +641,11 @@ health_check_interval_healthy = 30
 health_check_interval_unhealthy = 3
 " >> /etc/rauthy/rauthy-pam-nss.toml
     fi
+
+  elif isInstalledVersion "0.2.0"; then
+    echo "Upgrading from v0.2.0"
+    # In this case, there was only a tiny update for the PAM module.
+    # This will be auto-installed with everything else below. Nothing special to do.
 
   else
     echo "Could not find already installed version or mismatching SHA256 hashes found"
