@@ -66,6 +66,8 @@ build-install-archive:
     #!/usr/bin/env bash
     set -euxo pipefail
 
+    bash -n install/install.sh
+
     test -f install/rauthy-pam-nss-install.tar.gz && rm -f install/rauthy-pam-nss-install.tar.gz
     test -f {{ install_dir }}/LICENSE && rm -rf {{ install_dir }}
     mkdir -p {{ install_dir }}
