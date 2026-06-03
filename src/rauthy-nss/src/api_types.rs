@@ -71,6 +71,10 @@ pub struct UserResponse {
     pub gid: u32,
     pub email: String,
     pub shell: String,
+    // The API does not return an `Option(_)`, but setting it increases compatibility and makes
+    // it possible to migrate without any service downtime. Can be changed to `String` in the
+    // future.
+    pub home_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

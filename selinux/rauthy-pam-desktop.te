@@ -49,7 +49,7 @@ allow systemd_user_runtimedir_t unconfined_service_t:unix_stream_socket connectt
 #============= xdm_t ==============
 allow xdm_t rauthy_etc_t:dir search;
 allow xdm_t rauthy_etc_t:file { getattr open read setattr };
-allow xdm_t rauthy_var_lib_t:dir { getattr search };
+allow xdm_t rauthy_var_lib_t:dir { add_name getattr search };
 allow xdm_t rauthy_var_lib_t:file { getattr open read write };
 allow xdm_t home_root_t:dir { add_name create };
 

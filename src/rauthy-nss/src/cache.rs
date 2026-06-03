@@ -60,7 +60,9 @@ impl Cache {
                     None => {
                         ack.send(None).unwrap();
                     }
-                    Some(v) => {
+                    Some(v) =>
+                    {
+                        #[allow(clippy::collapsible_match)]
                         if v.exp > Utc::now().timestamp() {
                             ack.send(Some(v.value.clone())).unwrap();
                         } else {

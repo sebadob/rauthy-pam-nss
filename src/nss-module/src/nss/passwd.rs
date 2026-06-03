@@ -13,7 +13,7 @@ impl PasswdHooks for RauthyNss {
                 let mut res = Vec::with_capacity(users.len());
 
                 for user in users {
-                    let dir = format!("/home/{}", user.name);
+                    let dir = user.home_dir();
                     res.push(Passwd {
                         name: user.name,
                         passwd: "x".to_string(),
@@ -41,7 +41,7 @@ impl PasswdHooks for RauthyNss {
 
         match send_getent!(&format!("/getent/users/uid/{uid}")) {
             GetentResponse::User(user) => {
-                let dir = format!("/home/{}", user.name);
+                let dir = user.home_dir();
                 Response::Success(Passwd {
                     name: user.name,
                     passwd: "x".to_string(),
@@ -61,7 +61,7 @@ impl PasswdHooks for RauthyNss {
 
         match send_getent!(&format!("/getent/users/name/{name}")) {
             GetentResponse::User(user) => {
-                let dir = format!("/home/{}", user.name);
+                let dir = user.home_dir();
                 Response::Success(Passwd {
                     name: user.name,
                     passwd: "x".to_string(),

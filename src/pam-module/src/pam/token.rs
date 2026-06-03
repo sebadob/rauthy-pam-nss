@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::Permissions;
 use std::path::PathBuf;
 use std::process::Command;
+use std::str::FromStr;
 use std::sync::OnceLock;
 
 static TOKEN: OnceLock<Option<PamToken>> = OnceLock::new();
@@ -21,13 +22,21 @@ pub struct PamToken {
     pub uid: u32,
     pub gid: u32,
     pub username: String,
+    // This is not optional on Rauthys side, but we set it to an Option to make a smooth
+    // migration possible. Can be set to a `String` in the future.
+    pub home_dir: Option<String>,
     pub roles: Vec<String>,
     pub groups: Vec<String>,
 }
 
 impl PamToken {
     pub fn create_home_dir(&self) -> anyhow::Result<()> {
-        let path = PathBuf::from("/home").join(&self.username);
+        let path = if let Some(dir) = &self.home_dir {
+            // Infallible
+            PathBuf::from_str(dir)?
+        } else {
+            PathBuf::from("/home").join(&self.username)
+        };
 
         if !fs::exists(&path)? {
             fs::create_dir_all(&path).expect("Cannot create user homedir");
@@ -46,7 +55,7 @@ impl PamToken {
                 // we want to ignore the result here, because SELinux may not even be installed
                 let _ = Command::new("/usr/sbin/restorecon")
                     .arg("-rF")
-                    .arg(format!("/home/{}", self.username))
+                    .arg(path.to_str().unwrap())
                     .output();
             }
 

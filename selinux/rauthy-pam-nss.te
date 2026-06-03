@@ -78,6 +78,7 @@ allow init_t user_home_t:file { create open setattr write };
 allow init_t rauthy_etc_t:file { open read setattr };
 allow init_t http_port_t:tcp_socket name_connect;
 allow init_t http_cache_port_t:tcp_socket name_connect;
+allow init_t rauthy_var_lib_t:dir add_name;
 
 # On systemd systems, the rauthy-nss service is started via init_t.
 # Only this very service should be allowed to create + setattr the socket!
@@ -139,107 +140,28 @@ allow virtqemud_t http_cache_port_t:tcp_socket name_connect;
 #================= NSS ==================
 #========================================
 
-#============= abrt_t ==============
-allow abrt_t rauthy_var_run_t:dir search;
-allow abrt_t rauthy_var_run_t:sock_file write;
-allow abrt_t unconfined_service_t:unix_stream_socket connectto;
+typeattribute abrt_t rauthy_client_t;
+typeattribute abrt_dump_oops_t rauthy_client_t;
+typeattribute accountsd_t rauthy_client_t;
+typeattribute auditd_t rauthy_client_t;
+typeattribute chkpwd_t rauthy_client_t;
+typeattribute chronyd_t rauthy_client_t;
+typeattribute colord_t rauthy_client_t;
+typeattribute cupsd_t rauthy_client_t;
+typeattribute dnsmasq_t rauthy_client_t;
+typeattribute geoclue_t rauthy_client_t;
+typeattribute init_t rauthy_client_t;
+typeattribute local_login_t rauthy_client_t;
+typeattribute logrotate_t rauthy_client_t;
+typeattribute passwd_t rauthy_client_t;
+typeattribute policykit_t rauthy_client_t;
+typeattribute policykit_auth_t rauthy_client_t;
+typeattribute systemd_logind_t rauthy_client_t;
+typeattribute sshd_t rauthy_client_t;
+typeattribute systemd_userdbd_t rauthy_client_t;
+typeattribute systemd_tmpfiles_t rauthy_client_t;
+typeattribute virtqemud_t rauthy_client_t;
 
-#============= abrt_dump_oops_t ==============
-allow abrt_dump_oops_t rauthy_var_run_t:dir search;
-allow abrt_dump_oops_t rauthy_var_run_t:sock_file write;
-allow abrt_dump_oops_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= accountsd_t ==============
-allow accountsd_t rauthy_var_run_t:dir search;
-allow accountsd_t rauthy_var_run_t:sock_file write;
-allow accountsd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= auditd_t ==============
-allow auditd_t rauthy_var_run_t:dir search;
-allow auditd_t rauthy_var_run_t:sock_file write;
-allow auditd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= chkpwd_t ==============
-allow chkpwd_t rauthy_var_run_t:dir search;
-allow chkpwd_t rauthy_var_run_t:sock_file write;
-allow chkpwd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= chronyd_t ==============
-allow chronyd_t rauthy_var_run_t:dir search;
-allow chronyd_t rauthy_var_run_t:sock_file write;
-allow chronyd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= colord_t ==============
-allow colord_t rauthy_var_run_t:dir search;
-allow colord_t rauthy_var_run_t:sock_file write;
-allow colord_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= cupsd_t ==============
-allow cupsd_t rauthy_var_run_t:dir search;
-allow cupsd_t rauthy_var_run_t:sock_file write;
-allow cupsd_t unconfined_service_t:sock_file write;
-
-#============= dnsmasq_t ==============
-allow dnsmasq_t rauthy_var_run_t:dir search;
-allow dnsmasq_t rauthy_var_run_t:sock_file write;
-allow dnsmasq_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= geoclue_t ==============
-allow geoclue_t rauthy_var_run_t:dir search;
-allow geoclue_t rauthy_var_run_t:sock_file write;
-allow geoclue_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= init_t ==============
-allow init_t rauthy_var_run_t:dir search;
-allow init_t rauthy_var_run_t:sock_file write;
-allow init_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= local_login_t ==============
-allow local_login_t rauthy_var_run_t:dir search;
-allow local_login_t rauthy_var_run_t:sock_file write;
-allow local_login_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= logrotate_t ==============
-allow logrotate_t rauthy_var_run_t:dir search;
-allow logrotate_t rauthy_var_run_t:sock_file write;
-allow logrotate_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= passwd_t ==============
-allow passwd_t rauthy_var_run_t:dir search;
-allow passwd_t rauthy_var_run_t:sock_file write;
-allow passwd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= policykit_t ==============
-allow policykit_t rauthy_var_run_t:dir search;
-allow policykit_t rauthy_var_run_t:sock_file write;
-allow policykit_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= policykit_auth_t ==============
-allow policykit_auth_t rauthy_var_run_t:dir search;
-allow policykit_auth_t rauthy_var_run_t:sock_file write;
-allow policykit_auth_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= systemd_logind_t ==============
-allow systemd_logind_t rauthy_var_run_t:dir search;
-allow systemd_logind_t rauthy_var_run_t:sock_file write;
-allow systemd_logind_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= sshd_t ==============
-allow sshd_t rauthy_var_run_t:dir search;
-allow sshd_t rauthy_var_run_t:sock_file write;
-allow sshd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= systemd_userdbd_t ==============
-allow systemd_userdbd_t rauthy_var_run_t:dir search;
-allow systemd_userdbd_t rauthy_var_run_t:sock_file write;
-allow systemd_userdbd_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= systemd_tmpfiles_t ==============
-allow systemd_tmpfiles_t rauthy_var_run_t:dir search;
-allow systemd_tmpfiles_t rauthy_var_run_t:sock_file write;
-allow systemd_tmpfiles_t unconfined_service_t:unix_stream_socket connectto;
-
-#============= virtqemud_t ==============
-allow virtqemud_t rauthy_var_run_t:dir search;
-allow virtqemud_t rauthy_var_run_t:sock_file write;
-allow virtqemud_t unconfined_service_t:unix_stream_socket connectto;
+allow rauthy_client_t rauthy_var_run_t:dir search;
+allow rauthy_client_t rauthy_var_run_t:sock_file write;
+allow rauthy_client_t unconfined_service_t:unix_stream_socket connectto;
