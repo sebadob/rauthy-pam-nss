@@ -102,8 +102,20 @@ impl Config {
 
         let path = PathBuf::from(CONFIG_PATH);
         let parent = path.parent().unwrap();
-        fs::create_dir_all(parent)?;
-        fs::set_permissions(parent, Permissions::from_mode(0o600))?;
+
+        // Only lock down the parent directory when we create it ourselves. If it
+        // already exists it may be shared with the Rauthy server's own config,
+        // which can run as a different user, so resetting its permissions would
+        // break that server (#14). Once the dir is pre-existing, access
+        // responsibility for it moves to root / the user who owns it.
+        //
+        // Note: the mode is `0o700`, not `0o600`. A directory needs its
+        // owner-execute bit to be traversable, so `0o600` would prevent even
+        // root (outside of `CAP_DAC_OVERRIDE`) from reaching the file inside it.
+        if !fs::exists(parent)? {
+            fs::create_dir_all(parent)?;
+            fs::set_permissions(parent, Permissions::from_mode(0o700))?;
+        }
 
         fs::File::create_new(&path)?;
         fs::set_permissions(path, Permissions::from_mode(0o600))?;
