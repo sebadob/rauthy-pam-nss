@@ -13,6 +13,8 @@ files_type(rauthy_var_lib_t);
 type rauthy_var_run_t;
 files_type(rauthy_var_run_t);
 
+attribute rauthy_client_t;
+
 require {
 	type abrt_t;
 	type abrt_dump_oops_t;
