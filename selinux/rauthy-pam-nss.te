@@ -39,6 +39,7 @@ require {
 	type policykit_auth_t;
 	type setfiles_exec_t;
 	type sshd_t;
+	type sshd_session_t;
 	type systemd_logind_t;
 	type systemd_tmpfiles_t;
 	type systemd_userdbd_t;
@@ -50,7 +51,8 @@ require {
 	type virtqemud_t;
 
 	class dir { add_name create search getattr open read relabelfrom relabelto remove_name setattr search write };
-	class file { create entrypoint execute execute_no_trans getattr map open read setattr write };
+	class file { create entrypoint execute execute_no_trans getattr map open read relabelto setattr write };
+	class process signal;
 	class tcp_socket name_connect;
 	class sock_file { create setattr unlink write };
 	class unix_dgram_socket create;
@@ -123,12 +125,28 @@ allow sshd_t rauthy_var_lib_t:file { create getattr open read write };
 allow sshd_t http_cache_port_t:tcp_socket name_connect;
 
 # necessary if the very first login is done via ssh with no existing home dir
-allow sshd_t home_root_t:dir { relabelfrom setattr };
-allow sshd_t user_home_dir_t:dir { create relabelto setattr };
+allow sshd_t home_root_t:dir { add_name create setattr write };
+allow sshd_t user_home_dir_t:dir { create getattr open relabelto setattr write };
 allow sshd_t setfiles_exec_t:file { execute execute_no_trans map open read };
 
 # needed to be able to copy `skel_rauthy` dir into new home location
-allow sshd_t user_home_dir_t:file { create getattr open setattr write };
+allow sshd_t user_home_dir_t:file { create getattr open relabelto setattr write };
+
+# sshd needs to be able to kill a user session if necessary
+allow sshd_t unconfined_t:process signal;
+
+#============= sshd_session_t ==============
+allow sshd_session_t rauthy_etc_t:dir { getattr open read search };
+allow sshd_session_t rauthy_etc_t:file { getattr open read setattr };
+allow sshd_session_t rauthy_var_lib_t:dir { add_name create getattr search setattr write };
+allow sshd_session_t rauthy_var_lib_t:file { create getattr open read write };
+
+# necessary if the very first login is done via ssh with no existing home dir
+allow sshd_session_t home_root_t:dir { add_name create setattr write };
+allow sshd_session_t setfiles_exec_t:file { execute execute_no_trans map open read };
+
+# needed to be able to copy `skel_rauthy` dir into new home location
+allow sshd_session_t user_home_dir_t:file { create getattr open relabelto setattr write };
 
 #============= systemd_logind_t ==============
 allow systemd_logind_t rauthy_var_run_t:dir search;
@@ -165,6 +183,7 @@ typeattribute policykit_t rauthy_client_t;
 typeattribute policykit_auth_t rauthy_client_t;
 typeattribute systemd_logind_t rauthy_client_t;
 typeattribute sshd_t rauthy_client_t;
+typeattribute sshd_session_t rauthy_client_t;
 typeattribute systemd_userdbd_t rauthy_client_t;
 typeattribute systemd_tmpfiles_t rauthy_client_t;
 typeattribute virtqemud_t rauthy_client_t;
