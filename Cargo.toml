@@ -3,7 +3,7 @@ resolver = "3"
 members = ["src/*"]
 
 [workspace.package]
-version = "0.3.0-20260603"
+version = "0.3.0"
 edition = "2024"
 authors = ["Sebastian Dobe <sebastiandobe@mailbox.org>"]
 license = "GPLv3"
@@ -35,10 +35,12 @@ pamsm = { version = "0.5", features = ["libpam"] }
 reqwest = { version = "0.13", features = ["json", "hickory-dns"] }
 serde = { version = "1.0.219", features = ["derive"] }
 syslog = "7"
-tikv-jemallocator = { version = "0.6", features = ["unprefixed_malloc_on_supported_platforms"] }
+tikv-jemallocator = { version = "0.7", features = ["unprefixed_malloc_on_supported_platforms"] }
 tokio = { version = "1.45.0" }
 toml = "1"
 url = { version = "2.5.4", features = ["serde"] }
-webauthn-authenticator-rs = { version = "0.5.2", features = ["ctap2", "qrcode", "mozilla", "ui-cli", "usb"] }
+webauthn-authenticator-rs = { version = "0.5.2", features = [
+    "ctap2", "qrcode", "mozilla", "ui-cli", "usb"
+] }
 webauthn-rs = "0.5.2"
 webauthn-rs-core = "0.5.2"
