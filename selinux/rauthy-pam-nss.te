@@ -32,6 +32,7 @@ require {
 	type http_cache_port_t;
 	type init_t;
 	type local_login_t;
+	type locate_t;
 	type logrotate_t;
 	type passwd_t;
 	type policykit_t;
@@ -52,6 +53,7 @@ require {
 	class file { create entrypoint execute execute_no_trans getattr map open read setattr write };
 	class tcp_socket name_connect;
 	class sock_file { create setattr unlink write };
+	class unix_dgram_socket create;
 	class unix_stream_socket connectto;
 }
 
@@ -108,6 +110,9 @@ allow local_login_t setfiles_exec_t:file { execute execute_no_trans map open rea
 
 # needed to be able to copy `skel_rauthy` dir into new home location
 allow local_login_t user_home_dir_t:file { create getattr open setattr write };
+
+#============= locate_t ==============
+allow locate_t self:unix_dgram_socket create;
 
 #============= sshd_t ==============
 allow sshd_t rauthy_etc_t:dir { getattr open read search };
