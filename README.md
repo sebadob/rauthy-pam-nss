@@ -13,8 +13,8 @@ Supported features:
     - [x] `getent group`
     - [x] `getent group <groupname>`
     - [x] `getent group <group_id>`
-    - [x] merged groups - Rauthy can manage groups with type `local` which it then will map to a locally
-      existing `gid`, which again can be merged with proper config in `/etc/nsswitch.conf`
+    - [x] merged groups - Rauthy can manage groups with type `local` which it then will map to a locally existing `gid`,
+      which again can be merged with proper config in `/etc/nsswitch.conf`
 - [x] NSS module to resolve non-local hosts (`getent hosts`)
     - [x] `getent hosts`
     - [x] `getent hosts <hostname>` - Note: The module finds and returns the correct data, but `getent` e.g. does not
@@ -45,8 +45,8 @@ A more detailed documentation can be found in the [Rauthy Book](https://sebadob.
 tl;dr is:
 
 ```bash
-curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/download/v0.2.1/rauthy-pam-nss-install.tar.gz.sha256 && \
-    curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/download/v0.2.1/rauthy-pam-nss-install.tar.gz && \
+curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/latest/download/rauthy-pam-nss-install.tar.gz.sha256 && \
+    curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/latest/download/rauthy-pam-nss-install.tar.gz && \
     sha256sum -c rauthy-pam-nss-install.tar.gz.sha256 && \
     tar -xzf rauthy-pam-nss-install.tar.gz && \
     cd rauthy-pam-nss-install
@@ -99,6 +99,32 @@ install-archive, depending on your arch.
 > Node: You may need to install some dev dependencies, most probably openssl-devel. These have different names and you
 > may need to look them up somewhere.
 
+## SSH Config
+
+You can add public SSH keys to your Rauthy account. These do not work by default but need to be configured in your
+`sshd_config`. This module ships a tiny binary that will help you resolve these keys dynamically. You need to add the
+following lines to your `sshd_config`:
+
+```bash
+AuthorizedKeysCommand /usr/sbin/rauthy-authorized-keys
+AuthorizedKeysCommandUser root
+```
+
+You can test the command manually with e.g.
+
+```bash
+rauthy-authorized-keys rauthy_pam_user_name_with_pubkey
+```
+
+To make the ephemeral passwords generated via the Account Dashboard work, you need to allow `PasswordAuthentication`
+as well:
+
+```bash
+PasswordAuthentication yes
+```
+
+> Make sure to restart `sshd` after config changes.
+
 ## Limitations
 
 Everything you need to do via SSH should be fine, as long as your configuration supports it. However, there is currently
@@ -107,8 +133,8 @@ account. You can do a single one via e.g. `sudo su -` to become `root`, but you 
 for a Rauthy-managed user from that session. You need to `exit` first to get to your root session. The reason is, that
 the NSS module checks ENV vars from your session and depending on their values, it will either request a Remote PAM
 Password from the account dashboard, or it will request your "real" password / Yubikey. If you have a password-only
-account, this will work, but if your account is MFA secured, it's simply impossible to provide a USB Passkey via an
-ssh remote connection.
+account, this will work, but if your account is MFA secured, it's simply impossible to provide a USB Passkey via an ssh
+remote connection.
 
 Of course anyone can just modify their own env vars, but this is no security issue. If you mess up the `RAUTHY_*` env
 vars, you will simply not be able to do anything authentication related anymore depending on your account setup.

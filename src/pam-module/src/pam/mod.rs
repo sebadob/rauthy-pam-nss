@@ -288,6 +288,10 @@ impl PamServiceModule for RauthyPam {
         let (config, token) = load_config_token!(&pamh, username, false);
 
         if let Some(token) = token {
+            if let Err(err) = token.create_home_dir() {
+                sys_err(&pamh, &err.to_string());
+            }
+
             let session_typ = if Self::get_service(&pamh) == PamService::Ssh {
                 "remote"
             } else {

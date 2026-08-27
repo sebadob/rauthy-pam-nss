@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.0
+
+- The custom home dir that you can set in the latest Rauthy versions is now forwarded properly.
+- A users home dir is now being created during `open_session` instead of during login. This is necessary to make pure
+  pubkey-based SSH logins work properly and respect a custom `skel` dir.
+- Improvements and bugfixes for SELinux rules.
+- The access rights for `/etc/rauthy` are only modified if the dir does not exit yet during startup. This makes it
+  possible to put other config files in it. Only the PAM NSS config files access rights are checked with each restart.
+
 ## v0.2.1
 
 This is a tiny bugfix release. Apart from bumping some external dependencies versions, this only removes a forgotten
@@ -68,9 +77,9 @@ health_check_interval_unhealthy = 3
 
 #### ssh `AuthorizedKeysCommand`
 
-This version, in combination with Rauthy v0.33, bringts support for the SSH `AuthorizedKeysCommand`.
-A user can add public keys via the Account Dashboard for validation in addition to the already existing
-PAM password. To make it work, you need to add the following lines to your `sshd_config`:
+This version, in combination with Rauthy v0.33, bringts support for the SSH `AuthorizedKeysCommand`. A user can add
+public keys via the Account Dashboard for validation in addition to the already existing PAM password. To make it work,
+you need to add the following lines to your `sshd_config`:
 
 ```
 AuthorizedKeysCommand /usr/sbin/rauthy-authorized-keys
@@ -92,8 +101,8 @@ If you already have an existing installation, you only want to execute
 ./install.sh update
 ```
 
-This will keep your existing config untouched and only add the new values. It will also update SELinux policies (if
-they exist in the system), the PAM and NSS modules and services, and it will install the new `rauthy-authorized-keys`.
+This will keep your existing config untouched and only add the new values. It will also update SELinux policies (if they
+exist in the system), the PAM and NSS modules and services, and it will install the new `rauthy-authorized-keys`.
 
 ### Bugfix
 

@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 // TODO change path + data to the same location as the proxy to re-use it
-static PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
-// static PATH: &str = "/etc/security/pam_rauthy.toml";
+const PATH: &str = "/etc/rauthy/rauthy-pam-nss.toml";
+// const PATH: &str = "/etc/security/pam_rauthy.toml";
 
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
