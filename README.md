@@ -45,8 +45,8 @@ A more detailed documentation can be found in the [Rauthy Book](https://sebadob.
 tl;dr is:
 
 ```bash
-curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/download/v0.2.1/rauthy-pam-nss-install.tar.gz.sha256 && \
-    curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/download/v0.2.1/rauthy-pam-nss-install.tar.gz && \
+curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/latest/download/rauthy-pam-nss-install.tar.gz.sha256 && \
+    curl -LO https://github.com/sebadob/rauthy-pam-nss/releases/latest/download/rauthy-pam-nss-install.tar.gz && \
     sha256sum -c rauthy-pam-nss-install.tar.gz.sha256 && \
     tar -xzf rauthy-pam-nss-install.tar.gz && \
     cd rauthy-pam-nss-install
