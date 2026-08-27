@@ -219,15 +219,6 @@ impl RauthyPam {
                 };
                 sys_info(pamh, &msg);
 
-                // Note: We are creating the home dir during login and not in session, where it
-                // would make more sense from a logical standpoint. The reason is that we can have
-                // more hardened SELinux rules, if we do it here. During the session creation,
-                // we are usually executing from an `unconfined_t` context, where we definitely
-                // do not want to allow relabeling files.
-                if let Err(err) = token.create_home_dir() {
-                    sys_err(pamh, &err.to_string());
-                }
-
                 if let Err(err) = token.save(pamh, &config) {
                     sys_err(pamh, &format!("Error saving PAM token: {err}"));
                 }
