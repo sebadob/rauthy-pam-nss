@@ -98,5 +98,3 @@ sudo ./install.sh nss && sudo ./install.sh pam
 # Release
 
 Only when the full test was fine, you can use these files for the final release.
-
-Make sure to update the `Install TL;DR` in the `README.md` before pushing the final commit.
