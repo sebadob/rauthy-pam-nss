@@ -20,8 +20,16 @@ With `-R` to do it recursively.
 
 # debug alerts
 
+Specific:
+
 ```bash
 ausearch -c 'updatedb' --raw | audit2allow
+```
+
+Show all:
+
+```bash
+ausearch -m AVC --raw | audit2allow
 ```
 
 # find all files with label
