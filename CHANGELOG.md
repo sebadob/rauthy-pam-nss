@@ -1,5 +1,17 @@
 # Changelog
 
+## UNRELEASED
+
+- Fixed a logic errors when using `su` and `sudo`. Some things were impossible to achieve because of logic issues, and
+  sometimes you just got a *Password:* prompt when it should have been *Remote Password:*, which was confusing.
+- Fixed a permissions bug on the config dir on creation. This never showed up before, because the installer script
+  creates it correctly upfront, but it may have if the dir was ever deleted and the PAM module would re-create it. The
+  config file itself was properly set though, so not a huge issue.
+- More types have been added to SELinux rules for connecting to the NSS service.
+- More safeguards were added to catch possibly inconsistent configuration or setup, like e.g. trailing `/` issues, and
+  so on.
+- Even though you should never do this, the PAM module now respects the `danger_allow_insecure` flag from the config.
+
 ## v0.3.0
 
 - The custom home dir that you can set in the latest Rauthy versions is now forwarded properly.

@@ -60,26 +60,26 @@ macro_rules! get_nonlocal_username {
     }};
 }
 
-macro_rules! get_nonlocal_r_username {
-    ($pamh:expr) => {{
-        let username = match $pamh.get_ruser() {
-            Ok(Some(u)) => u.to_str().unwrap(),
-            Ok(None) => return PamError::AUTH_ERR,
-            Err(err) => return err,
-        };
-        let username = if username.len() >= 2 {
-            username
-        } else {
-            return PamError::CRED_UNAVAIL;
-        };
-
-        if RauthyPam::is_local_user(username) {
-            return PamError::CRED_UNAVAIL;
-        }
-
-        username
-    }};
-}
+// macro_rules! get_nonlocal_r_username {
+//     ($pamh:expr) => {{
+//         let username = match $pamh.get_ruser() {
+//             Ok(Some(u)) => u.to_str().unwrap(),
+//             Ok(None) => return PamError::AUTH_ERR,
+//             Err(err) => return err,
+//         };
+//         let username = if username.len() >= 2 {
+//             username
+//         } else {
+//             return PamError::CRED_UNAVAIL;
+//         };
+//
+//         if RauthyPam::is_local_user(username) {
+//             return PamError::CRED_UNAVAIL;
+//         }
+//
+//         username
+//     }};
+// }
 
 #[derive(Debug, PartialEq)]
 pub enum PamService {
@@ -126,16 +126,13 @@ impl RauthyPam {
             }
         }
 
-        let cmd = format!(
-            "{} {} {} {} {} {}",
-            path.to_str().unwrap_or_default(),
-            token.username,
-            token.uid,
-            token.gid,
-            token.user_id,
-            token.user_email
-        );
-        let res = Command::new("/bin/bash").arg("-c").arg(cmd).output()?;
+        let res = Command::new(path.to_str().unwrap_or_default())
+            .arg(&token.username)
+            .arg(token.uid.to_string())
+            .arg(token.gid.to_string())
+            .arg(&token.user_id)
+            .arg(&token.user_email)
+            .output()?;
 
         if res.status.success() {
             if *DEBUG.get().unwrap() {
@@ -175,10 +172,6 @@ impl RauthyPam {
         match pamh.get_service() {
             Ok(v) => {
                 let svc = v.unwrap_or_default().to_str().unwrap_or_default();
-                if *DEBUG.get().unwrap() {
-                    sys_info(pamh, &format!("Service detected: {svc}"));
-                }
-
                 match svc.to_lowercase().as_str() {
                     "gdm" => PamService::Gdm,
                     "login" => PamService::Login,
@@ -205,11 +198,7 @@ impl PamServiceModule for RauthyPam {
         debug(&pamh, "acct_mgmt");
 
         let svc = Self::get_service(&pamh);
-        let username = if matches!(svc, PamService::Sudo | PamService::Su) {
-            get_nonlocal_r_username!(&pamh)
-        } else {
-            get_nonlocal_username!(&pamh)
-        };
+        let username = get_nonlocal_username!(&pamh);
         let (config, token) = load_config_token!(&pamh, username, false);
 
         if let Some(token) = token
@@ -244,16 +233,19 @@ impl PamServiceModule for RauthyPam {
         debug(&pamh, "authenticate");
 
         let svc = Self::get_service(&pamh);
-        let username = if matches!(svc, PamService::Sudo | PamService::Su) {
-            get_nonlocal_r_username!(&pamh)
-        } else {
-            get_nonlocal_username!(&pamh)
-        };
-        eprintln!("authenticate username: {username} with svc {svc:?}");
-        // println!("authenticate username: {username}");
+        // For both `sudo` and `su`, the user calling that function will be the `ruser`. In case of
+        // `su`, `ruser` will be the caller and `user` will be the target. In case of `sudo` both
+        // point to the calling user.
+        let username = get_nonlocal_username!(&pamh);
 
         match Self::handle_authenticate(&pamh, username, svc, false) {
-            Ok(_) => PamError::SUCCESS,
+            Ok(_) => {
+                sys_info(
+                    &pamh,
+                    &format!("Rauthy PAM authentication for user '{username}' successful"),
+                );
+                PamError::SUCCESS
+            }
             Err(err) => {
                 sys_err(&pamh, &format!("Rauthy PAM login failed with {err}"));
                 err
@@ -267,15 +259,6 @@ impl PamServiceModule for RauthyPam {
         debug(&pamh, "setcred");
 
         let _username = get_nonlocal_username!(&pamh);
-        // let (config, _) = load_config_token!(&pamh, username);
-        // println!(
-        //     r#"You cannot change your credentials here, please go to your account dashboard:
-        //
-        //     {}/auth/v1/account
-        //     "#,
-        //     config.rauthy_url
-        // );
-
         PamError::SUCCESS
     }
 
@@ -283,9 +266,19 @@ impl PamServiceModule for RauthyPam {
         set_debug(&args);
         debug(&pamh, "open_session");
 
-        // TODO will we ever need to check the remote user here?
         let username = get_nonlocal_username!(&pamh);
-        let (config, token) = load_config_token!(&pamh, username, false);
+        let svc = Self::get_service(&pamh);
+
+        let (config, mut token) = load_config_token!(&pamh, username, false);
+
+        if token.is_none() && svc == PamService::Su {
+            // If this was a user switch via `sudo su`, we might not have an auth token.
+            // `sudo` would have granted access without a direct login in that case. We need to
+            // fetch the token for information.
+            let _ = Self::handle_authenticate(&pamh, username, PamService::Su, true);
+            let (_, t) = load_config_token!(&pamh, username, false);
+            token = t;
+        }
 
         if let Some(token) = token {
             if let Err(err) = token.create_home_dir() {
@@ -311,14 +304,11 @@ impl PamServiceModule for RauthyPam {
                 sys_err(&pamh, &format!("Error setting ENV var: {err}"));
             }
 
-            if let Some(path) = &config.exec_session_open {
-                let svc = Self::get_service(&pamh);
-
-                if (svc == PamService::Login || svc == PamService::Ssh)
-                    && let Err(err) = Self::exec_script(&pamh, path, token)
-                {
-                    sys_err(&pamh, &err.to_string());
-                }
+            if let Some(path) = &config.exec_session_open
+                && (svc == PamService::Login || svc == PamService::Ssh)
+                && let Err(err) = Self::exec_script(&pamh, path, token)
+            {
+                sys_err(&pamh, &err.to_string());
             }
 
             PamError::SUCCESS

@@ -169,8 +169,15 @@ install-nss:
      test -f /usr/lib64/libnss_r && sudo rm /usr/lib64/libnss_r
      test -f /usr/lib64/libnss_rauthy.so.2 && sudo rm /usr/lib64/libnss_rauthy.so.2
 
+     test -f /usr/lib64/libnss_rauthy.so.2 && sudo rm /usr/lib64/libnss_rauthy.so.2
+     test -f /lib/libnss_rauthy.so.2 && sudo rm /lib/libnss_rauthy.so.2
      sudo cp target/release/librauthy_nss.so /usr/lib64/libnss_rauthy.so.2
      sudo cp target/release/librauthy_nss.so /lib/libnss_rauthy.so.2
+
+     sudo systemctl stop rauthy-nss || echo 'rauthy-nss not running'
+     sudo test -f /usr/local/sbin/rauthy-nss && sudo rm /usr/local/sbin/rauthy-nss
+     sudo cp target/release/rauthy-nss /usr/sbin/
+     sudo systemctl start rauthy-nss
 
 # copies templates/authselect/ to /etc/authselect/custom/rauthy/system-auth and re-applies it
 update-authselect:
@@ -228,7 +235,7 @@ release: verify
     git tag "v$TAG"
     git push origin "v$TAG"
 
-# does a `cargo update` + `npm update` for the UI
+# does a `cargo update` with min release days
 update:
     #!/usr/bin/env bash
     set -euxo pipefail

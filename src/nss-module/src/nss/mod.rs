@@ -25,16 +25,19 @@ macro_rules! send_getent {
             };
 
             if status.is_success() {
-                match bincode::decode_from_slice::<$crate::api_types::GetentResponse, _>(
+                match bincode_next::decode_from_slice::<$crate::api_types::GetentResponse, _>(
                     body.as_ref(),
-                    bincode::config::standard(),
+                    bincode_next::config::standard(),
                 ) {
                     Ok((resp, _)) => Ok(resp),
                     Err(err) => {
-                        log::error!("Error decoding getent response: {}", err);
+                        log::error!("Error decoding getent response: {}", err,);
                         Err(libnss::interop::Response::Unavail)
                     }
                 }
+            } else if status.as_u16() == 404 {
+                log::debug!("getent request not found");
+                Err(libnss::interop::Response::NotFound)
             } else {
                 let text = String::from_utf8_lossy(body.as_ref());
                 log::error!("getent request failed: {}", text);

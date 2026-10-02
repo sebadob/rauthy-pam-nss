@@ -22,9 +22,13 @@ fn init_syslog() {
         pid: process::id(),
     };
 
-    let logger = syslog::unix(formatter).expect("could not connect to syslog");
-    let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(LevelFilter::Info));
+    if let Ok(logger) = syslog::unix(formatter) {
+        let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+            .map(|()| log::set_max_level(LevelFilter::Info));
+    } else {
+        // if syslog fails, we fall back to stdout
+        let _ = env_logger::try_init();
+    }
 }
 
 libnss_passwd_hooks!(rauthy, RauthyNss);
