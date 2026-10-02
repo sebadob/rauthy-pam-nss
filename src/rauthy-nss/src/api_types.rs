@@ -1,7 +1,8 @@
+use bincode_next::Encode;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Encode, Serialize)]
 pub enum Getent {
     Users,
     Username(String),
@@ -14,7 +15,7 @@ pub enum Getent {
     HostIp(IpAddr),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Encode, Serialize)]
 pub struct GetentRequest<'a> {
     pub host_id: &'a str,
     pub host_secret: &'a str,
@@ -27,7 +28,7 @@ pub struct HostWhoamiRequest<'a> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Deserialize)]
 pub struct HostResponse {
     pub id: String,
     pub name: String,
@@ -35,7 +36,7 @@ pub struct HostResponse {
     pub addresses: Vec<IpAddr>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Deserialize)]
 pub struct HostDetailsResponse {
     pub id: String,
     pub hostname: String,
@@ -46,7 +47,7 @@ pub struct HostDetailsResponse {
     pub aliases: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Encode, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GroupType {
     Immutable,
@@ -56,7 +57,7 @@ pub enum GroupType {
     Local,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Deserialize)]
 pub struct GroupResponse {
     pub id: u32,
     pub name: String,
@@ -64,20 +65,17 @@ pub struct GroupResponse {
     pub members: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Deserialize)]
 pub struct UserResponse {
     pub id: u32,
     pub name: String,
     pub gid: u32,
     pub email: String,
     pub shell: String,
-    // The API does not return an `Option(_)`, but setting it increases compatibility and makes
-    // it possible to migrate without any service downtime. Can be changed to `String` in the
-    // future.
-    pub home_dir: Option<String>,
+    pub home_dir: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Deserialize)]
 pub enum GetentResponse {
     Users(Vec<UserResponse>),
     User(UserResponse),

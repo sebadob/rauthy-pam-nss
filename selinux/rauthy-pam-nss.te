@@ -177,6 +177,7 @@ typeattribute dnsmasq_t rauthy_client_t;
 typeattribute geoclue_t rauthy_client_t;
 typeattribute init_t rauthy_client_t;
 typeattribute local_login_t rauthy_client_t;
+typeattribute locate_t rauthy_client_t;
 typeattribute logrotate_t rauthy_client_t;
 typeattribute passwd_t rauthy_client_t;
 typeattribute policykit_t rauthy_client_t;

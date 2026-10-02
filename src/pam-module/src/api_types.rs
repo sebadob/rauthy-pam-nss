@@ -17,10 +17,10 @@ pub struct PamLoginRequest {
 }
 
 #[derive(Debug, Serialize)]
-pub struct PamPreflightRequest {
-    pub host_id: String,
-    pub host_secret: String,
-    pub username: String,
+pub struct PamPreflightRequest<'a> {
+    pub host_id: &'a str,
+    pub host_secret: &'a str,
+    pub username: &'a str,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,13 +31,16 @@ pub struct PamPreflightResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct PamMfaStartRequest {
-    pub username: String,
+pub struct PamMfaStartRequest<'a> {
+    pub host_id: &'a str,
+    pub host_secret: &'a str,
+    pub username: &'a str,
 }
 
 #[derive(Debug, Serialize)]
-pub struct PamMfaFinishRequest {
-    pub user_id: String,
+pub struct PamMfaFinishRequest<'a> {
+    pub host_id: &'a str,
+    pub host_secret: &'a str,
     pub data: WebauthnAuthFinishRequest,
 }
 
@@ -45,8 +48,6 @@ pub struct PamMfaFinishRequest {
 pub struct WebauthnAuthStartResponse {
     pub code: String,
     pub rcr: webauthn_rs::prelude::RequestChallengeResponse,
-    pub user_id: String,
-    // pub exp: u64,
 }
 
 #[derive(Debug, Serialize)]

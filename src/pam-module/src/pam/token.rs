@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::{CLIENT, RT, copy_dir};
+use crate::{RT, copy_dir, http_client};
 use chrono::Utc;
 use pamsm::Pam;
 use reqwest::header::AUTHORIZATION;
@@ -85,8 +85,10 @@ impl PamToken {
         let path = base.join("token");
 
         let bytes = fs::read(path)?;
-        let (slf, _) =
-            bincode::serde::decode_from_slice::<Self, _>(&bytes, bincode::config::standard())?;
+        let (slf, _) = bincode_next::serde::decode_from_slice::<Self, _>(
+            &bytes,
+            bincode_next::config::standard(),
+        )?;
 
         if with_validation {
             match slf.validate(config) {
@@ -110,7 +112,7 @@ impl PamToken {
         let base = config.data_path_user(pamh, &self.username)?;
         let path = base.join("token");
 
-        let bytes = bincode::serde::encode_to_vec(self, bincode::config::standard())?;
+        let bytes = bincode_next::serde::encode_to_vec(self, bincode_next::config::standard())?;
         fs::write(path, bytes)?;
 
         Ok(())
@@ -124,7 +126,7 @@ impl PamToken {
 
         let url = format!("{}auth/v1/pam/validate/{}", config.rauthy_url, self.user_id);
         RT.block_on(async move {
-            let res = CLIENT
+            let res = http_client(config.danger_allow_insecure)
                 .get(url)
                 .header(AUTHORIZATION, format!("PamToken {}", self.id))
                 .send()

@@ -2,13 +2,13 @@ use crate::cache::Cache;
 use crate::config::Config;
 use crate::error::Error;
 use crate::utils::{deserialize, serialize};
-use serde::{Deserialize, Serialize};
+use bincode_next::{Decode, Encode};
 use std::collections::BTreeMap;
 use tokio::fs;
 
 static CACHE_KEY: &str = "$groups_local_all$";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct GroupLocal {
     pub id: u32,
     pub name: String,

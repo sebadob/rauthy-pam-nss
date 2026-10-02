@@ -62,6 +62,8 @@ impl PamWebauthn {
                         break;
                     }
                     Err(err) => {
+                        // TODO should we break here? The current approach let's the user retry,
+                        //  for instance when UV was needed, and the user did not touch long enough.
                         ui.tx
                             .send(PamReq::Err(format!("Passkey validation error: {err:?}")))
                             .unwrap();
@@ -107,10 +109,14 @@ impl PamWebauthn {
         }
     }
 
-    pub async fn wait_for_passkey<U: UiCallback>(ui: &U) -> CtapAuthenticator<'_, USBToken, U> {
+    pub async fn wait_for_passkey<U: UiCallback>(
+        ui: &U,
+    ) -> Result<CtapAuthenticator<'_, USBToken, U>, String> {
         use futures::StreamExt;
 
-        let reader = USBTransport::new().await.unwrap();
+        let reader = USBTransport::new().await.map_err(|err| {
+            format!("No USB Transport found - cannot authenticate via Passkey: {err}")
+        })?;
 
         loop {
             match reader.watch().await {
@@ -121,7 +127,7 @@ impl PamWebauthn {
                                 let auth = CtapAuthenticator::new(token, ui).await;
 
                                 if let Some(auth) = auth {
-                                    return auth;
+                                    return Ok(auth);
                                 }
                             }
 

@@ -6,27 +6,23 @@ use crate::config::Config;
 use crate::pam::token::PamToken;
 use crate::pam::webauthn::PamWebauthn;
 use crate::pam::{PamService, RauthyPam, sys_err, sys_info};
-use crate::{CLIENT, RT};
+use crate::{RT, http_client};
 use pamsm::{Pam, PamError, PamLibExt};
 use reqwest::Url;
 use std::ops::Deref;
 use std::time::Duration;
 use tokio::time;
+use zeroize::Zeroize;
 
 impl RauthyPam {
-    async fn preflight(
-        origin: Url,
-        host_id: String,
-        host_secret: String,
-        username: String,
-    ) -> Result<PamPreflightResponse, String> {
-        let url = format!("{origin}auth/v1/pam/preflight");
-        let res = CLIENT
+    async fn preflight(config: &Config, username: &str) -> Result<PamPreflightResponse, String> {
+        let url = format!("{}auth/v1/pam/preflight", config.rauthy_url);
+        let res = http_client(config.danger_allow_insecure)
             .post(url)
             .json(&PamPreflightRequest {
-                host_id,
-                host_secret,
-                username: username.clone(),
+                host_id: &config.host_id,
+                host_secret: &config.host_secret,
+                username,
             })
             .send()
             .await
@@ -45,7 +41,14 @@ impl RauthyPam {
         }
     }
 
-    async fn mfa(pamh: &Pam, origin: Url, username: String) -> Result<String, String> {
+    async fn mfa(
+        pamh: &Pam,
+        origin: Url,
+        host_id: String,
+        host_secret: String,
+        username: &str,
+        danger_insecure: bool,
+    ) -> Result<String, String> {
         println!("Provide your Passkey");
 
         // This short sleep will fight a race condition.
@@ -56,14 +59,18 @@ impl RauthyPam {
         let authenticator =
             tokio::time::timeout(Duration::from_secs(20), PamWebauthn::wait_for_passkey(ui))
                 .await
-                .map_err(|_| "timed out".to_string())?;
+                .map_err(|_| "timed out".to_string())??;
 
         let url_start = format!("{origin}auth/v1/pam/mfa/start");
         let url_finish = format!("{origin}auth/v1/pam/mfa/finish");
 
-        let res = CLIENT
+        let res = http_client(danger_insecure)
             .post(url_start)
-            .json(&PamMfaStartRequest { username })
+            .json(&PamMfaStartRequest {
+                host_id: &host_id,
+                host_secret: &host_secret,
+                username,
+            })
             .send()
             .await
             .map_err(|err| err.to_string())?;
@@ -80,10 +87,11 @@ impl RauthyPam {
 
         match PamWebauthn::perform_auth(pamh, authenticator, origin, resp.rcr.public_key).await {
             Ok(pk_cred) => {
-                let res = CLIENT
+                let res = http_client(danger_insecure)
                     .post(url_finish)
                     .json(&PamMfaFinishRequest {
-                        user_id: resp.user_id,
+                        host_id: &host_id,
+                        host_secret: &host_secret,
                         data: WebauthnAuthFinishRequest {
                             code: resp.code,
                             data: pk_cred,
@@ -111,14 +119,20 @@ impl RauthyPam {
         Err("Passkey validation failed".to_string())
     }
 
-    async fn send_login(origin: Url, payload: PamLoginRequest) -> Result<PamToken, String> {
+    async fn send_login(
+        origin: &Url,
+        mut payload: PamLoginRequest,
+        danger_insecure: bool,
+    ) -> Result<PamToken, String> {
         let url = format!("{origin}auth/v1/pam/login");
-        let res = CLIENT
+        let res = http_client(danger_insecure)
             .post(url)
             .json(&payload)
             .send()
             .await
             .map_err(|err| err.to_string())?;
+
+        payload.password.zeroize();
 
         if res.status().is_success() {
             res.json::<PamToken>().await.map_err(|err| err.to_string())
@@ -135,12 +149,7 @@ impl RauthyPam {
     ) -> Result<(), PamError> {
         let config = Config::load_create(pamh)?;
 
-        let preflight = match RT.block_on(Self::preflight(
-            config.rauthy_url.clone(),
-            config.host_id.clone(),
-            config.host_secret.clone(),
-            username.to_string(),
-        )) {
+        let preflight = match RT.block_on(Self::preflight(&config, username)) {
             Ok(p) => p,
             Err(err) => {
                 sys_err(pamh, &format!("Preflight Error: {err}"));
@@ -165,7 +174,7 @@ impl RauthyPam {
             danger_auth_checked_locally: None,
         };
 
-        if is_ssh && danger_auth_checked_locally {
+        if (is_ssh || svc == PamService::Su) && danger_auth_checked_locally {
             // This will fetch a PamToken without authentication. Necessary for e.g. SSH logins
             // via public key. In these cases, the PAM auth step will never be called, because
             // `sshd` takes care of the authentication via authorized keys. It will then call the
@@ -176,7 +185,10 @@ impl RauthyPam {
             match RT.block_on(Self::mfa(
                 pamh,
                 config.rauthy_url.clone(),
-                username.to_string(),
+                config.host_id.clone(),
+                config.host_secret.clone(),
+                username,
+                config.danger_allow_insecure,
             )) {
                 Ok(webauthn_code) => {
                     login_req.webauthn_code = Some(webauthn_code);
@@ -187,7 +199,8 @@ impl RauthyPam {
                 }
             }
         } else {
-            let text = if is_ssh {
+            let use_remote_pwd = is_ssh || svc == PamService::Su || svc == PamService::Sudo;
+            let text = if use_remote_pwd {
                 "Remote PAM Password: "
             } else {
                 "Password: "
@@ -203,14 +216,18 @@ impl RauthyPam {
                     return Err(err);
                 }
             };
-            if is_ssh {
+            if use_remote_pwd {
                 login_req.remote_password = Some(password)
             } else {
                 login_req.password = Some(password);
             }
         };
 
-        match RT.block_on(Self::send_login(config.rauthy_url.clone(), login_req)) {
+        match RT.block_on(Self::send_login(
+            &config.rauthy_url,
+            login_req,
+            config.danger_allow_insecure,
+        )) {
             Ok(token) => {
                 let msg = if preflight.mfa_required {
                     format!("Rauthy PAM MFA Login successful for user {username}")

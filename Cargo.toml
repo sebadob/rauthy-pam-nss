@@ -3,7 +3,7 @@ resolver = "3"
 members = ["src/*"]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = ["Sebastian Dobe <sebastiandobe@mailbox.org>"]
 license = "GPLv3"
@@ -17,9 +17,10 @@ panic = "abort"
 [workspace.dependencies]
 axum = { version = "0.8", features = ["http2", "macros"] }
 anyhow = "1.0.98"
-bincode = { version = "2", features = ["serde"] }
+bincode-next = { version = "3", features = ["serde"] }
 chrono = "0.4.41"
 dotenvy = "0.15.7"
+env_logger = "0.11.11"
 flume = "0.12"
 futures = "0.3.31"
 http-body-util = "0.1"
@@ -44,3 +45,4 @@ webauthn-authenticator-rs = { version = "0.5.2", features = [
 ] }
 webauthn-rs = "0.5.2"
 webauthn-rs-core = "0.5.2"
+zeroize = "1.9"

@@ -19,6 +19,8 @@ pub struct Config {
     pub rauthy_url: reqwest::Url,
     pub host_id: String,
     pub host_secret: String,
+    #[serde(default)]
+    pub danger_allow_insecure: bool,
     #[serde(default = "data_path")]
     pub data_path: PathBuf,
     pub home_dir_skel: Option<PathBuf>,
@@ -79,7 +81,7 @@ impl Config {
         let mut file = File::open(PATH)?;
         // println!("{file:?}");
 
-        let perms = Permissions::from_mode(0o644);
+        let perms = Permissions::from_mode(0o600);
         if file.metadata()?.permissions() != perms {
             fs::set_permissions(PATH, perms)?;
         }

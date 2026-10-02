@@ -37,7 +37,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
             (cached, key)
         }
         Getent::UserId(uid) => {
-            let key = format!("u_{uid}");
+            let key = format!("uid_{uid}");
             let cached = Cache::get(key.clone()).await;
             (cached, key)
         }
@@ -51,7 +51,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
             (cached, key)
         }
         Getent::GroupId(gid) => {
-            let key = format!("g_{gid}");
+            let key = format!("gid_{gid}");
             let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }
@@ -65,7 +65,7 @@ async fn fetch_getent(getent: Getent) -> ApiResponse {
             (cached, key)
         }
         Getent::HostIp(ip) => {
-            let key = format!("h_{ip}");
+            let key = format!("hip_{ip}");
             let cached = Cache::get(key.to_string()).await;
             (cached, key)
         }

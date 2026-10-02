@@ -13,14 +13,13 @@ impl PasswdHooks for RauthyNss {
                 let mut res = Vec::with_capacity(users.len());
 
                 for user in users {
-                    let dir = user.home_dir();
                     res.push(Passwd {
                         name: user.name,
                         passwd: "x".to_string(),
                         uid: user.id,
                         gid: user.gid,
                         gecos: user.email,
-                        dir,
+                        dir: user.home_dir,
                         shell: user.shell,
                     });
                 }
@@ -40,18 +39,15 @@ impl PasswdHooks for RauthyNss {
         init_syslog();
 
         match send_getent!(&format!("/getent/users/uid/{uid}")) {
-            GetentResponse::User(user) => {
-                let dir = user.home_dir();
-                Response::Success(Passwd {
-                    name: user.name,
-                    passwd: "x".to_string(),
-                    uid: user.id,
-                    gid: user.gid,
-                    gecos: user.email,
-                    dir,
-                    shell: user.shell,
-                })
-            }
+            GetentResponse::User(user) => Response::Success(Passwd {
+                name: user.name,
+                passwd: "x".to_string(),
+                uid: user.id,
+                gid: user.gid,
+                gecos: user.email,
+                dir: user.home_dir,
+                shell: user.shell,
+            }),
             _ => unreachable!(),
         }
     }
@@ -60,18 +56,15 @@ impl PasswdHooks for RauthyNss {
         init_syslog();
 
         match send_getent!(&format!("/getent/users/name/{name}")) {
-            GetentResponse::User(user) => {
-                let dir = user.home_dir();
-                Response::Success(Passwd {
-                    name: user.name,
-                    passwd: "x".to_string(),
-                    uid: user.id,
-                    gid: user.gid,
-                    gecos: user.email,
-                    dir,
-                    shell: user.shell,
-                })
-            }
+            GetentResponse::User(user) => Response::Success(Passwd {
+                name: user.name,
+                passwd: "x".to_string(),
+                uid: user.id,
+                gid: user.gid,
+                gecos: user.email,
+                dir: user.home_dir,
+                shell: user.shell,
+            }),
             _ => unreachable!(),
         }
     }
