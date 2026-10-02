@@ -17,6 +17,9 @@ V_0_2_1_HASH_PAM_X86_x64="b1a9ac0405f7ea2a4c3d25906f13657b05054b87682f357ef4262d
 V_0_3_0_HASH_PAM_AARCH64="dac777669af1cbe85fd9183d0a971c4c1ea5d3bae42564e1b717b06bd4231ac6"
 V_0_3_0_HASH_PAM_X86_x64="b12b5a0c1f5f9bc9d3df0200764556a3259e764e72711a95c4ecaf966f33aa0c"
 
+V_0_3_1_HASH_PAM_AARCH64="169e5c2fda9a647da10d4a42c01dd2d9f48d45140678043e5139638d90fa0d22"
+V_0_3_1_HASH_PAM_X86_x64="bc763790e2ae8629ce39648404d8029f90083991370e9c7e5204f654b5805748"
+
 chmod() {
   /usr/bin/chmod "$@"
 }
@@ -151,6 +154,10 @@ isInstalledVersion() {
       if sha256check $V_0_3_0_HASH_PAM_X86_x64 $PATH; then
         return 0
       fi
+    elif [[ $1 == "0.3.1" ]]; then
+      if sha256check $V_0_3_1_HASH_PAM_X86_x64 $PATH; then
+        return 0
+      fi
     # update in future versions with earlier released hash
     fi
 
@@ -169,6 +176,10 @@ isInstalledVersion() {
       fi
     elif [[ $1 == "0.3.0" ]]; then
       if sha256check $V_0_3_0_HASH_PAM_AARCH64 $PATH; then
+        return 0
+      fi
+    elif [[ $1 == "0.3.1" ]]; then
+      if sha256check $V_0_3_1_HASH_PAM_AARCH64 $PATH; then
         return 0
       fi
     # update in future versions with earlier released hash
@@ -674,7 +685,11 @@ health_check_interval_unhealthy = 3
     # Nothing special to do.
 
   elif isInstalledVersion "0.3.0"; then
-    echo "Upgrading from v0.3.0 - NOT YET IMPLEMENTED"
+    echo "Upgrading from v0.3.0"
+    # Nothing special to do.
+
+  elif isInstalledVersion "0.3.1"; then
+    echo "Upgrading from v0.3.1 - NOT YET IMPLEMENTED"
     # Needs to be updated with the next version
     exit 1
 
