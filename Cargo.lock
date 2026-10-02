@@ -2263,7 +2263,7 @@ dependencies = [
 
 [[package]]
 name = "rauthy-authorized-keys"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -2273,7 +2273,7 @@ dependencies = [
 
 [[package]]
 name = "rauthy-nss"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -2296,7 +2296,7 @@ dependencies = [
 
 [[package]]
 name = "rauthy-nss-module"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "bincode-next",
@@ -2313,7 +2313,7 @@ dependencies = [
 
 [[package]]
 name = "rauthy-pam-module"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "bincode-next",

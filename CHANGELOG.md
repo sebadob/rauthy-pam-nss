@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## v0.3.1
 
 - Fixed a logic errors when using `su` and `sudo`. Some things were impossible to achieve because of logic issues, and
   sometimes you just got a *Password:* prompt when it should have been *Remote Password:*, which was confusing.
